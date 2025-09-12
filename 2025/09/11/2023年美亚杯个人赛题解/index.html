@@ -3,7 +3,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="utf-8" />
-    <title>Archives | Yin&#39;s Blog</title>
+    <title> | Yin&#39;s Blog</title>
     <meta name="author" content="Yin" />
     <meta name="description" content="一个热爱技术的开发者的个人博客，分享编程心得和生活感悟" />
     <meta name="keywords" content="hexo,blog,技术博客,编程,开发" />
@@ -37,6 +37,10 @@
 
 
 <script src="/js/lib/preview.js"></script>
+
+
+
+
 
 
 
@@ -150,106 +154,69 @@
 </transition>
 
         <div id="main" :class="loading ? 'into-enter-from': 'into-enter-active'">
-            
-<div id="archives">
-    
-    <div id="timeline-wrap" ref="timeline">
+            <div class="article">
+    <div>
+        <h1></h1>
+    </div>
+    <div class="info">
+        <span class="date">
+            <span class="icon">
+                <i class="fa-solid fa-calendar fa-fw"></i>
+            </span>
+            2025/9/11
+        </span>
         
-        <div class="timeline" data-title="helloworld">
-            <div class="timeline-tail"></div>
-            <div class="timeline-content">
-                <div class="item-time">2025/9/10</div>
-                <a href="/2025/09/10/hello-world/">
-                    <h3>Hello World</h3>
-                </a>
-                <div class="info">
-                    
-                    
-                </div>
-            </div>
-        </div>
-        
-        <div class="timeline" data-title="我的第一篇博客文章">
-            <div class="timeline-tail"></div>
-            <div class="timeline-content">
-                <div class="item-time">2025/9/10</div>
-                <a href="/2025/09/10/%E6%88%91%E7%9A%84%E7%AC%AC%E4%B8%80%E7%AF%87%E5%8D%9A%E5%AE%A2%E6%96%87%E7%AB%A0/">
-                    <h3>我的第一篇博客文章</h3>
-                </a>
-                <div class="info">
-                    
-                    <span class="category">
-                        <a href="/categories/%E6%8A%80%E6%9C%AF%E5%88%86%E4%BA%AB/">
-                            <span class="icon">
-                                <i class="fa-solid fa-bookmark fa-fw"></i>
-                            </span>
-                            技术分享
-                        </a>
-                    </span>
-                    
-                    
-                    <span class="tags">
-                        <span class="icon">
-                            <i class="fa-solid fa-tags fa-fw"></i>
-                        </span>
-                        
-                        
-                        <span class="tag">
-                            
-                            <a href="/tags/%E5%8D%9A%E5%AE%A2/" style="color: #ff7d73">
-                                博客
-                            </a>
-                        </span>
-                        
-                        <span class="tag">
-                            
-                            <a href="/tags/Hexo/" style="color: #00a596">
-                                Hexo
-                            </a>
-                        </span>
-                        
-                        <span class="tag">
-                            
-                            <a href="/tags/GitHub-Pages/" style="color: #ffa2c4">
-                                GitHub Pages
-                            </a>
-                        </span>
-                        
-                    </span>
-                    
-                </div>
-            </div>
-        </div>
-        
-        <div class="timeline" data-title="">
-            <div class="timeline-tail"></div>
-            <div class="timeline-content">
-                <div class="item-time">2025/9/11</div>
-                <a href="/2025/09/11/2023%E5%B9%B4%E7%BE%8E%E4%BA%9A%E6%9D%AF%E4%B8%AA%E4%BA%BA%E8%B5%9B%E9%A2%98%E8%A7%A3/">
-                    <h3></h3>
-                </a>
-                <div class="info">
-                    
-                    
-                </div>
-            </div>
-        </div>
-        
-        <div class="timeline" data-title="">
-            <div class="timeline-tail"></div>
-            <div class="timeline-content">
-                <div class="item-time">2025/9/12</div>
-                <a href="/2025/09/12/Cryptography/%E4%BA%8C.OTE(Oblivious%20Transfer%20Extension)/">
-                    <h3></h3>
-                </a>
-                <div class="info">
-                    
-                    
-                </div>
-            </div>
-        </div>
         
     </div>
+    
+    <div class="content" v-pre>
+        <h1 id="美亚杯2023年个人赛题解"><a href="#美亚杯2023年个人赛题解" class="headerlink" title="美亚杯2023年个人赛题解"></a>美亚杯2023年个人赛题解</h1><blockquote>
+<p>首先该容器的密码为：3hqGFfT#B<em>Yjd74t@f%9fDqs6D^$wVjAvxZkA79</em>4UV<em>kVRcq^Zu6Xp87W</em>p#X3XD%<em>ER!nHzzTnSEMwy8NEGX6A</em>%P&amp;#rBUkxypAPKwX4mP3WZuHnYKRc7sA33hd@qS<br>案件背景为：2023月8月的一天，香港警方在调查一起网络诈骗案件时，发现有三名本地男子，分別为李大輝（李大辉），浩賢(浩贤)和Elvis CHUI，并确信这三名被捕男子均为大学同学。怀疑三人背后涉及一个庞大的电信诈骗集团。于是将这三名本地男子拘捕，扣押了三人相关的电子设备并进行分析。<br>现在你被委派处理这件案件，请依据以下资料分析上述三人是否涉嫌犯罪，并还原事件经过。</p>
+</blockquote>
+<h2 id="手机（Android）"><a href="#手机（Android）" class="headerlink" title="手机（Android）"></a>手机（Android）</h2><ol>
+<li><p>李大辉所用手机移动运营商公司的名称?<br>可以直接由火眼取证分析的<code>SIM 卡使用记录</code>上看到信息：Mobile Duck<br><img src="/./image/meiya2023person1.png" alt="2023美亚杯第一张图"></p>
+</li>
+<li><p>李大辉的手机安装了什么即时通讯软件?(单选)</p>
+<blockquote>
+<p>A.WhatsApp<br>B.LINE<br>C.微信<br>D.Signal<br>E.QQ<br>通过观察发现，火眼分析出来两个即时通信软件：<code>WhatsApp</code> 和 <code>Wechat</code><br>但是只有 <code>WhatsApp</code> 上面有大量的信息，而 <code>WeChat</code> 基本没有<br><img src="/./image/meiya2023person2.1.png" alt="2023美亚杯第二题第一张图"><br><img src="/./image/meiya2023person2.2.png" alt="2023美亚杯第二题第二张图"></p>
+</blockquote>
+</li>
+<li><p>李大辉的手机安装了什么反追踪软件?</p>
+<blockquote>
+<p>这道题存疑，但是根据图库找到<br><img src="/./image/meiya2023person4.png" alt="2023美亚杯第三题图"><br>考虑到删除EXIF数据可能可以被认为广义的反追踪功能<br>所以考虑答案为&#x3D;&#x3D;Photo Exif Editor-Metadata&#x3D;&#x3D;</p>
+</blockquote>
+</li>
+<li><p>李大辉的手机是什么时间成功登入 WhatsApp?</p>
+<blockquote>
+<p>A. 2022-08-18_21:52:30<br>B. 2022-08-19_21:56:23<br>&#x3D;&#x3D;C.2022-08-18_21:56:37&#x3D;&#x3D;<br>D. 2022-08-19_06:59:07<br>E. 2022-08-19_07:01:17<br>考虑到一般 APP 登录时存在短信认证等一系列消息,在短信中发现信息如下<br><img src="/./image/meiya2023person3.png" alt="2023美亚杯第四题图"><br>由于登录时间应当与验证码收到时间相差不多，所以应当在<code>2022-08-18 21:56:23</code> 前后</p>
+</blockquote>
+</li>
+<li><p>李大辉登入 WhatsApp 时的认证短码是什么?<br>有4题图可知代码为：&#x3D;&#x3D;304-313&#x3D;&#x3D;</p>
+</li>
+<li><p>李大辉到美丽好化妆品公司的入职时间是何时?</p>
+<blockquote>
+<p>A. 2016-04-16<br>B. 2016-06-28<br>&#x3D;&#x3D;C. 2017-05-25&#x3D;&#x3D;<br>D. 2017-07-25<br>E. 2017-08-18<br>在火眼分析中有唯一一个.pdf文件，且查看发现是李大辉的员工证：<br><img src="/./image/meiya2023person6.png" alt="2023meiya6"><br>上图现实入职时间为&#x3D;&#x3D;2017-05-25&#x3D;&#x3D;</p>
+</blockquote>
+</li>
+<li><p>李大辉曾于什么时间使用了图像编辑软件?</p>
+<blockquote>
+<p>A. 2022-09-10<br>B. 2022-09-12<br>C. 2022-10-05<br>D. 2022-11-10<br>E. 2022-11-13<br><img src="/./image/meiya2023person7.png" alt="2023meiya7"><br>注意到第一张图片的创建时间与修改时间不一致，所以在&#x3D;&#x3D;2022-10-11&#x3D;&#x3D;李大辉应当使用过图像编辑软件</p>
+</blockquote>
+</li>
+</ol>
+<h2 id="VPN-服务器"><a href="#VPN-服务器" class="headerlink" title="VPN 服务器"></a>VPN 服务器</h2><blockquote>
+<p>参考 Server 文件夹下的 Meiya_VPN.vmdk 回答以下题目.<br>8. 这个访问服务器使用了哪个端口?<br>   在 <code>/usr/local/openvpn_as/etc/db</code> 该目录下发现一个 <code>config_local_db</code> 的脚本，在里面记录了一下东西：<br>   <img src="/./image/meiya2023person8.png" alt="2023meiya8"><br>   由AI回答：<br>admin_ui.https.port: OpenVPN Access Server 管理界面(Admin UI)使用的 HTTPS 端口. 默认情况下管理员可以通过 HTTPS 连接到管理界面.<br>cs.https.port: OpenVPN Access Server 客户端服务(Client Service)使用的 HTTPS 端口. Access Server 提供了一个 Web 服务, 允许用户通过浏览器访问和下载连接配置文件等信息.<br>vpn.daemon.0.listen.port: 这是 OpenVPN 守护进程监听的端口. 通常此端口用于 OpenVPN 服务器接受客户端连接.<br>vpn.server.daemon.tcp.port: 这是 OpenVPN 服务器使用的 TCP 端口. OpenVPN 服务器通过此端口接受传入的连接.<br>9. User1 账户最近连接到这个访问服务器时使用的 IP 地址是多少?
+    </p>
+</blockquote>
+
+    </div>
+    
+    
+    
+    
+    
+    
+    
 </div>
 
             <footer id="footer">
@@ -280,6 +247,12 @@
         
     </div>
     <script src="/js/main.js"></script>
+    
+    
+
+
+
+
     
 </body>
 </html>
