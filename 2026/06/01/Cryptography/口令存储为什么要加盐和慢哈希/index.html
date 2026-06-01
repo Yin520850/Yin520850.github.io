@@ -1,0 +1,383 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>口令存储为什么要加盐和慢哈希 | Yin&#39;s Blog</title>
+    <meta name="author" content="Yin" />
+    <meta name="description" content="一个热爱技术的开发者的个人博客，分享编程心得和生活感悟" />
+    <meta name="keywords" content="hexo,blog,技术博客,编程,开发" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+    />
+    <link rel="icon" href="/images/avatar.jpg" />
+    <link rel="preconnect" href="https://s4.zstatic.net" />
+<script src="https://s4.zstatic.net/ajax/libs/vue/3.3.7/vue.global.prod.min.js"></script>
+<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.cn" />
+<link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin />
+<link
+    rel="stylesheet"
+    href="https://fonts.googleapis.cn/css2?family=Fira+Code:wght@400;500;600;700&family=Lexend:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;600;700;800;900&display=swap"
+/>
+<script> const mixins = {}; </script>
+
+<script src="https://polyfill.alicdn.com/v3/polyfill.min.js?features=default"></script>
+
+
+
+
+<script src="/js/lib/preview.js"></script>
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css" />
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+    <div id="layout">
+        <transition name="fade">
+            <div id="loading" v-show="loading">
+                <div id="loading-circle">
+                    <h2>LOADING</h2>
+                    <p>加载过慢请开启缓存 浏览器默认开启</p>
+                    <img src="/images/loading.gif" />
+                </div>
+            </div>
+        </transition>
+        <div id="menu" :class="{ hidden: hiddenMenu, 'menu-color': menuColor}">
+    <nav id="desktop-menu">
+        <a class="title" href="/">
+            <span>YIN&#39;S BLOG</span>
+        </a>
+        
+        <a href="/">
+            <i class="fa-solid fa-house fa-fw"></i>
+            <span>&ensp;Home</span>
+        </a>
+        
+        <a href="/about">
+            <i class="fa-solid fa-id-card fa-fw"></i>
+            <span>&ensp;About</span>
+        </a>
+        
+        <a href="/archives">
+            <i class="fa-solid fa-box-archive fa-fw"></i>
+            <span>&ensp;Archives</span>
+        </a>
+        
+        <a href="/categories">
+            <i class="fa-solid fa-bookmark fa-fw"></i>
+            <span>&ensp;Categories</span>
+        </a>
+        
+        <a href="/tags">
+            <i class="fa-solid fa-tags fa-fw"></i>
+            <span>&ensp;Tags</span>
+        </a>
+        
+    </nav>
+    <nav id="mobile-menu">
+        <div class="title" @click="showMenuItems = !showMenuItems">
+            <i class="fa-solid fa-bars fa-fw"></i>
+            <span>&emsp;YIN&#39;S BLOG</span>
+        </div>
+        <transition name="slide">
+            <div class="items" v-show="showMenuItems">
+                
+                <a href="/">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-house fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Home</div>
+                    </div>
+                </a>
+                
+                <a href="/about">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-id-card fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">About</div>
+                    </div>
+                </a>
+                
+                <a href="/archives">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-box-archive fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Archives</div>
+                    </div>
+                </a>
+                
+                <a href="/categories">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-bookmark fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Categories</div>
+                    </div>
+                </a>
+                
+                <a href="/tags">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-tags fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Tags</div>
+                    </div>
+                </a>
+                
+            </div>
+        </transition>
+    </nav>
+</div>
+<transition name="fade">
+    <div id="menu-curtain" @click="showMenuItems = !showMenuItems" v-show="showMenuItems"></div>
+</transition>
+
+        <div id="main" :class="loading ? 'into-enter-from': 'into-enter-active'">
+            <div class="article">
+    <div>
+        <h1>口令存储为什么要加盐和慢哈希</h1>
+    </div>
+    <div class="info">
+        
+        <span class="category">
+            <a href="/categories/Cryptography/">
+                <span class="icon">
+                    <i class="fa-solid fa-bookmark fa-fw"></i>
+                </span>
+                Cryptography
+            </a>
+        </span>
+        
+        
+        <span class="tags">
+            <span class="icon">
+                <i class="fa-solid fa-tags fa-fw"></i>
+            </span>
+            
+            
+            <span class="tag">
+                
+                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #ffa2c4">
+                    密码学
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/%E5%8F%A3%E4%BB%A4%E5%AE%89%E5%85%A8/" style="color: #03a9f4">
+                    口令安全
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/PBKDF2/" style="color: #ffa2c4">
+                    PBKDF2
+                </a>
+            </span>
+            
+        </span>
+        
+    </div>
+    
+    <div class="content" v-pre>
+        <h1 id="口令存储为什么要加盐和慢哈希"><a href="#口令存储为什么要加盐和慢哈希" class="headerlink" title="口令存储为什么要加盐和慢哈希"></a>口令存储为什么要加盐和慢哈希</h1><p>这篇文章写一个很常见、也很容易写错的问题：用户口令到底应该怎么存。</p>
+<p>很多初学者会写成这样：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">password -&gt; SHA256 -&gt; 存数据库</span><br></pre></td></tr></table></figure>
+
+<p>这比明文存储好一点，但仍然不够安全。原因是普通哈希太快、结果确定、容易被字典和泄露库批量攻击。</p>
+<p>更合理的做法是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">password + random salt -&gt; password hashing / KDF -&gt; 存算法、参数、salt、hash</span><br></pre></td></tr></table></figure>
+
+<p>实际系统中更推荐 Argon2id、scrypt、bcrypt、PBKDF2 这一类专门用于口令存储的算法。本文用 Python 标准库里的 PBKDF2-HMAC-SHA256 做演示，因为它不需要额外安装依赖，便于复现。</p>
+<h2 id="1-普通哈希的问题"><a href="#1-普通哈希的问题" class="headerlink" title="1. 普通哈希的问题"></a>1. 普通哈希的问题</h2><p>SHA256 是哈希算法，不是口令存储算法。它有一个特点：同一个输入永远得到同一个输出。</p>
+<p>例如口令：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Correct-Horse-Battery-Staple</span><br></pre></td></tr></table></figure>
+
+<p>直接计算 SHA256：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> hashlib</span><br><span class="line"></span><br><span class="line">digest = hashlib.sha256(password.encode(<span class="string">&quot;utf-8&quot;</span>)).hexdigest()</span><br></pre></td></tr></table></figure>
+
+<p>只要口令不变，哈希结果就不变。</p>
+<p>这会带来两个问题：</p>
+<ol>
+<li>两个用户使用同一个口令，数据库里的哈希值也相同。</li>
+<li>攻击者可以提前准备常见口令的哈希表，泄露后直接查表。</li>
+</ol>
+<p>所以口令存储不能只靠普通哈希。</p>
+<h2 id="2-盐是什么"><a href="#2-盐是什么" class="headerlink" title="2. 盐是什么"></a>2. 盐是什么</h2><p>盐就是每个口令记录独立生成的一段随机数据。</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">salt = random bytes</span><br><span class="line">hash = KDF(password, salt)</span><br></pre></td></tr></table></figure>
+
+<p>盐不需要保密，可以和哈希一起存在数据库里。它的作用不是当作第二个密码，而是让相同口令产生不同记录。</p>
+<p>例如两个用户都用了同一个口令：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">password = Correct-Horse-Battery-Staple</span><br></pre></td></tr></table></figure>
+
+<p>如果 salt 不同，最终存储记录也不同：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Record 1: pbkdf2_sha256$600000$salt1$hash1</span><br><span class="line">Record 2: pbkdf2_sha256$600000$salt2$hash2</span><br></pre></td></tr></table></figure>
+
+<p>这样攻击者不能用一张简单的预计算表同时覆盖所有用户。</p>
+<h2 id="3-为什么还要慢哈希"><a href="#3-为什么还要慢哈希" class="headerlink" title="3. 为什么还要慢哈希"></a>3. 为什么还要慢哈希</h2><p>盐解决的是“相同口令相同哈希”和“预计算表”的问题，但没有解决“暴力猜测很快”的问题。</p>
+<p>普通 SHA256 设计目标之一就是快。文件校验、完整性摘要都希望它越快越好。但口令验证的需求反过来：单次验证对服务器可以接受，批量猜测对攻击者应该尽量昂贵。</p>
+<p>所以口令存储要用慢哈希或 KDF。</p>
+<p>PBKDF2 的思路很直接：把 HMAC 重复计算很多轮。</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">PBKDF2(password, salt, iterations)</span><br></pre></td></tr></table></figure>
+
+<p><code>iterations</code> 越大，计算越慢。本文演示使用：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">600000</span><br></pre></td></tr></table></figure>
+
+<p>实际项目中参数要根据服务器性能、登录延迟和当前安全建议调整。</p>
+<h2 id="4-存储格式"><a href="#4-存储格式" class="headerlink" title="4. 存储格式"></a>4. 存储格式</h2><p>数据库里不要只存一个裸 hash。至少要存这些信息：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">algorithm$iterations$base64(salt)$base64(hash)</span><br></pre></td></tr></table></figure>
+
+<p>例如：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">pbkdf2_sha256$600000$...$...</span><br></pre></td></tr></table></figure>
+
+<p>这样以后参数升级时也能判断老记录使用了什么算法和迭代次数。</p>
+<p>登录校验流程是：</p>
+<ol>
+<li>从数据库读取记录。</li>
+<li>解析算法、迭代次数、salt、hash。</li>
+<li>用用户输入的 password 和同一个 salt 重新计算。</li>
+<li>用常量时间比较函数比较两个 hash。</li>
+</ol>
+<p>不要直接使用 <code>==</code> 比较敏感摘要，Python 中可以使用：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">hmac.compare_digest(actual, expected)</span><br></pre></td></tr></table></figure>
+
+<h2 id="5-Python-实现"><a href="#5-Python-实现" class="headerlink" title="5. Python 实现"></a>5. Python 实现</h2><p>核心代码如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">derive_pbkdf2_hash</span>(<span class="params"></span></span><br><span class="line"><span class="params">    password: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    salt: <span class="built_in">bytes</span>,</span></span><br><span class="line"><span class="params">    iterations: <span class="built_in">int</span> = <span class="number">600_000</span>,</span></span><br><span class="line"><span class="params">    dklen: <span class="built_in">int</span> = <span class="number">32</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">bytes</span>:</span><br><span class="line">    <span class="keyword">return</span> hashlib.pbkdf2_hmac(</span><br><span class="line">        <span class="string">&quot;sha256&quot;</span>,</span><br><span class="line">        password.encode(<span class="string">&quot;utf-8&quot;</span>),</span><br><span class="line">        salt,</span><br><span class="line">        iterations,</span><br><span class="line">        dklen=dklen,</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+
+<p>生成存储记录：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">encode_record</span>(<span class="params">iterations: <span class="built_in">int</span>, salt: <span class="built_in">bytes</span>, digest: <span class="built_in">bytes</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    salt_text = base64.b64encode(salt).decode(<span class="string">&quot;ascii&quot;</span>)</span><br><span class="line">    digest_text = base64.b64encode(digest).decode(<span class="string">&quot;ascii&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;pbkdf2_sha256$<span class="subst">&#123;iterations&#125;</span>$<span class="subst">&#123;salt_text&#125;</span>$<span class="subst">&#123;digest_text&#125;</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>验证口令：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">verify_password</span>(<span class="params">password: <span class="built_in">str</span>, record: <span class="built_in">str</span></span>) -&gt; <span class="built_in">bool</span>:</span><br><span class="line">    algorithm, iteration_text, salt_text, digest_text = record.split(<span class="string">&quot;$&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> algorithm != <span class="string">&quot;pbkdf2_sha256&quot;</span>:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">f&quot;unsupported algorithm: <span class="subst">&#123;algorithm&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    iterations = <span class="built_in">int</span>(iteration_text)</span><br><span class="line">    salt = base64.b64decode(salt_text)</span><br><span class="line">    expected = base64.b64decode(digest_text)</span><br><span class="line">    actual = derive_pbkdf2_hash(password, salt, iterations, <span class="built_in">len</span>(expected))</span><br><span class="line">    <span class="keyword">return</span> hmac.compare_digest(actual, expected)</span><br></pre></td></tr></table></figure>
+
+<p>完整代码截图：</p>
+<p><img src="/images/crypto-experiments/password-storage/password_storage_code.png" alt="PBKDF2 口令存储代码截图"></p>
+<h2 id="6-真实运行结果"><a href="#6-真实运行结果" class="headerlink" title="6. 真实运行结果"></a>6. 真实运行结果</h2><p>运行脚本：</p>
+<figure class="highlight powershell"><table><tr><td class="code"><pre><span class="line">python D:\密码实验\work\blog_password_storage\password_storage_demo.py</span><br></pre></td></tr></table></figure>
+
+<p>运行截图：</p>
+<p><img src="/images/crypto-experiments/password-storage/password_storage_run.png" alt="PBKDF2 口令存储运行截图"></p>
+<p>从运行结果可以看到：</p>
+<ol>
+<li>普通 SHA256 两次输出完全一样。</li>
+<li>同一个口令生成两条 PBKDF2 记录时，因为 salt 不同，记录不同。</li>
+<li>正确口令验证为 <code>True</code>。</li>
+<li>错误口令验证为 <code>False</code>。</li>
+</ol>
+<h2 id="7-Argon2id、bcrypt、PBKDF2-怎么选"><a href="#7-Argon2id、bcrypt、PBKDF2-怎么选" class="headerlink" title="7. Argon2id、bcrypt、PBKDF2 怎么选"></a>7. Argon2id、bcrypt、PBKDF2 怎么选</h2><p>如果是新系统，优先考虑 Argon2id。它在设计上考虑了内存成本，能提高 GPU&#x2F;ASIC 批量攻击成本。</p>
+<p>常见选择可以这样理解：</p>
+<table>
+<thead>
+<tr>
+<th>算法</th>
+<th>特点</th>
+<th>使用建议</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Argon2id</td>
+<td>可设置时间成本、内存成本、并行度</td>
+<td>新项目优先考虑</td>
+</tr>
+<tr>
+<td>scrypt</td>
+<td>内存硬算法</td>
+<td>也适合口令存储</td>
+</tr>
+<tr>
+<td>bcrypt</td>
+<td>历史长，使用广</td>
+<td>注意输入长度限制</td>
+</tr>
+<tr>
+<td>PBKDF2</td>
+<td>标准库和合规场景常见</td>
+<td>参数要足够高</td>
+</tr>
+</tbody></table>
+<p>本文使用 PBKDF2 不是说它一定最好，而是它容易用 Python 标准库复现，适合教学演示。</p>
+<h2 id="8-常见错误"><a href="#8-常见错误" class="headerlink" title="8. 常见错误"></a>8. 常见错误</h2><h3 id="8-1-salt-写死"><a href="#8-1-salt-写死" class="headerlink" title="8.1 salt 写死"></a>8.1 salt 写死</h3><p>salt 必须每条口令记录随机生成。不能写成固定字符串：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">salt = &quot;my-salt&quot;</span><br></pre></td></tr></table></figure>
+
+<p>固定 salt 只能让所有人一起“加同一个料”，不能解决相同口令相同记录的问题。</p>
+<h3 id="8-2-把-salt-当成秘密"><a href="#8-2-把-salt-当成秘密" class="headerlink" title="8.2 把 salt 当成秘密"></a>8.2 把 salt 当成秘密</h3><p>salt 可以公开存储。真正需要保密的是用户口令本身，以及可选的服务器端 pepper。</p>
+<p>pepper 和 salt 不一样。pepper 通常是系统级秘密，不能和数据库记录放在一起。</p>
+<h3 id="8-3-迭代次数永远不升级"><a href="#8-3-迭代次数永远不升级" class="headerlink" title="8.3 迭代次数永远不升级"></a>8.3 迭代次数永远不升级</h3><p>硬件会变快，旧参数会逐渐不够。比较实际的做法是：</p>
+<ol>
+<li>记录中保存参数。</li>
+<li>登录成功后检查参数是否过旧。</li>
+<li>如果过旧，用新参数重新计算并更新记录。</li>
+</ol>
+<h3 id="8-4-忘记限速"><a href="#8-4-忘记限速" class="headerlink" title="8.4 忘记限速"></a>8.4 忘记限速</h3><p>慢哈希不是万能的。登录接口还要做限速、失败次数控制、异常检测和多因素认证。</p>
+<h2 id="9-小结"><a href="#9-小结" class="headerlink" title="9. 小结"></a>9. 小结</h2><p>口令存储至少要做到：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">每条记录随机 salt</span><br><span class="line">使用专门的口令哈希/KDF</span><br><span class="line">保存算法和参数</span><br><span class="line">使用安全比较函数</span><br><span class="line">支持参数升级</span><br></pre></td></tr></table></figure>
+
+<p>不要把 SHA256(password) 当成完整口令存储方案。它缺少 salt 和成本参数，面对真实泄露场景很脆弱。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li>NIST SP 800-63B, Digital Identity Guidelines: Authentication and Lifecycle Management</li>
+<li>OWASP Password Storage Cheat Sheet</li>
+<li>RFC 9106: Argon2 Memory-Hard Function for Password Hashing and Proof-of-Work Applications</li>
+<li>Python Documentation: <code>hashlib.pbkdf2_hmac</code></li>
+</ul>
+
+    </div>
+    
+    
+    
+    
+    
+    
+    
+</div>
+
+            <footer id="footer">
+    <div id="footer-wrap">
+        <div>
+            &copy;
+            2025 - 2026 Yin&#39;s Blog
+            <span id="footer-icon">
+                <i class="fa-solid fa-font-awesome fa-fw"></i>
+            </span>
+            &commat;Yin
+        </div>
+        <div>
+            Based on the <a target="_blank" rel="noopener" href="https://hexo.io">Hexo Engine</a> &amp;
+            <a target="_blank" rel="noopener" href="https://github.com/theme-particlex/hexo-theme-particlex">ParticleX Theme</a>
+        </div>
+        
+    </div>
+</footer>
+
+        </div>
+        
+        <transition name="fade">
+            <div id="preview" ref="preview" v-show="previewShow">
+                <img id="preview-content" ref="previewContent" />
+            </div>
+        </transition>
+        
+    </div>
+    <script src="/js/main.js"></script>
+    
+    
+
+
+
+
+    
+</body>
+</html>
