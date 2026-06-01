@@ -1,0 +1,297 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>密码学实验复现如何保证真实可信 | Yin&#39;s Blog</title>
+    <meta name="author" content="Yin" />
+    <meta name="description" content="一个热爱技术的开发者的个人博客，分享编程心得和生活感悟" />
+    <meta name="keywords" content="hexo,blog,技术博客,编程,开发" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+    />
+    <link rel="icon" href="/images/avatar.jpg" />
+    <link rel="preconnect" href="https://s4.zstatic.net" />
+<script src="https://s4.zstatic.net/ajax/libs/vue/3.3.7/vue.global.prod.min.js"></script>
+<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.cn" />
+<link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin />
+<link
+    rel="stylesheet"
+    href="https://fonts.googleapis.cn/css2?family=Fira+Code:wght@400;500;600;700&family=Lexend:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;600;700;800;900&display=swap"
+/>
+<script> const mixins = {}; </script>
+
+<script src="https://polyfill.alicdn.com/v3/polyfill.min.js?features=default"></script>
+
+
+<script src="https://s4.zstatic.net/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://s4.zstatic.net/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js"></script>
+<link
+    rel="stylesheet"
+    href="https://s4.zstatic.net/ajax/libs/highlight.js/11.9.0/styles/github.min.css"
+/>
+<script src="/js/lib/highlight.js"></script>
+
+
+
+<script src="/js/lib/preview.js"></script>
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css" />
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+    <div id="layout">
+        <transition name="fade">
+            <div id="loading" v-show="loading">
+                <div id="loading-circle">
+                    <h2>LOADING</h2>
+                    <p>加载过慢请开启缓存 浏览器默认开启</p>
+                    <img src="/images/loading.gif" />
+                </div>
+            </div>
+        </transition>
+        <div id="menu" :class="{ hidden: hiddenMenu, 'menu-color': menuColor}">
+    <nav id="desktop-menu">
+        <a class="title" href="/">
+            <span>YIN&#39;S BLOG</span>
+        </a>
+        
+        <a href="/">
+            <i class="fa-solid fa-house fa-fw"></i>
+            <span>&ensp;Home</span>
+        </a>
+        
+        <a href="/about">
+            <i class="fa-solid fa-id-card fa-fw"></i>
+            <span>&ensp;About</span>
+        </a>
+        
+        <a href="/archives">
+            <i class="fa-solid fa-box-archive fa-fw"></i>
+            <span>&ensp;Archives</span>
+        </a>
+        
+        <a href="/categories">
+            <i class="fa-solid fa-bookmark fa-fw"></i>
+            <span>&ensp;Categories</span>
+        </a>
+        
+        <a href="/tags">
+            <i class="fa-solid fa-tags fa-fw"></i>
+            <span>&ensp;Tags</span>
+        </a>
+        
+    </nav>
+    <nav id="mobile-menu">
+        <div class="title" @click="showMenuItems = !showMenuItems">
+            <i class="fa-solid fa-bars fa-fw"></i>
+            <span>&emsp;YIN&#39;S BLOG</span>
+        </div>
+        <transition name="slide">
+            <div class="items" v-show="showMenuItems">
+                
+                <a href="/">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-house fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Home</div>
+                    </div>
+                </a>
+                
+                <a href="/about">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-id-card fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">About</div>
+                    </div>
+                </a>
+                
+                <a href="/archives">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-box-archive fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Archives</div>
+                    </div>
+                </a>
+                
+                <a href="/categories">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-bookmark fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Categories</div>
+                    </div>
+                </a>
+                
+                <a href="/tags">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-tags fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Tags</div>
+                    </div>
+                </a>
+                
+            </div>
+        </transition>
+    </nav>
+</div>
+<transition name="fade">
+    <div id="menu-curtain" @click="showMenuItems = !showMenuItems" v-show="showMenuItems"></div>
+</transition>
+
+        <div id="main" :class="loading ? 'into-enter-from': 'into-enter-active'">
+            <div class="article">
+    <div>
+        <h1>密码学实验复现如何保证真实可信</h1>
+    </div>
+    <div class="info">
+        <span class="date">
+            <span class="icon">
+                <i class="fa-solid fa-calendar fa-fw"></i>
+            </span>
+            2026/6/1
+        </span>
+        
+        <span class="category">
+            <a href="/categories/Cryptography/">
+                <span class="icon">
+                    <i class="fa-solid fa-bookmark fa-fw"></i>
+                </span>
+                Cryptography
+            </a>
+        </span>
+        
+        
+        <span class="tags">
+            <span class="icon">
+                <i class="fa-solid fa-tags fa-fw"></i>
+            </span>
+            
+            
+            <span class="tag">
+                
+                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #ff7d73">
+                    密码学
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/%E5%AE%9E%E9%AA%8C%E6%8A%A5%E5%91%8A/" style="color: #00a596">
+                    实验报告
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="color: #ff7d73">
+                    工程实践
+                </a>
+            </span>
+            
+        </span>
+        
+    </div>
+    
+    <div class="content" v-pre>
+        <h1 id="密码学实验复现如何保证真实可信"><a href="#密码学实验复现如何保证真实可信" class="headerlink" title="密码学实验复现如何保证真实可信"></a>密码学实验复现如何保证真实可信</h1><p>密码学实验最怕两件事：一是用自己编的小数据假装完成，二是截图和代码对不上。为了避免这两个问题，我把本次实验拆成了证据、代码、运行日志和截图四类材料。</p>
+<h2 id="证据先行"><a href="#证据先行" class="headerlink" title="证据先行"></a>证据先行</h2><p>所有公开题面先保存到本地：</p>
+<ul>
+<li>Cryptopals Set 1 &#x2F; Set 2 页面。</li>
+<li>Cryptopals challenge-data 文件。</li>
+<li>MysteryTwister C3 的 SHA1 和 ePassport PDF。</li>
+<li>Project Euler 182 页面。</li>
+<li>RSA 破译题本地 PDF 和 Frame 附件。</li>
+</ul>
+<p>这样报告里每个输入都能追到来源，而不是从记忆里复制。</p>
+<h2 id="测试先行"><a href="#测试先行" class="headerlink" title="测试先行"></a>测试先行</h2><p>本次代码先写了 <code>unittest</code>，用平台样例做断言：</p>
+<p><img src="/images/crypto-experiments/detailed/all_tests_after_refactor.png" alt="全量测试截图"></p>
+<p>测试覆盖了：</p>
+<ul>
+<li>hex 转 base64。</li>
+<li>fixed XOR。</li>
+<li>单字节 XOR。</li>
+<li>Hamming distance。</li>
+<li>AES-CBC 解密。</li>
+<li>ePassport MRZ 缺失字符和明文。</li>
+<li>Project Euler 182 答案。</li>
+<li>RSA Frame 解析和恢复。</li>
+</ul>
+<h2 id="运行日志"><a href="#运行日志" class="headerlink" title="运行日志"></a>运行日志</h2><p>每个实验单独运行并保存日志：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">work/runs/01_experiment1.log</span><br><span class="line">work/runs/02_experiment2.log</span><br><span class="line">work/runs/03_experiment3.log</span><br><span class="line">work/runs/04_experiment4.log</span><br></pre></td></tr></table></figure>
+
+<p>报告中的结果来自这些日志，不重新手写。</p>
+<h2 id="真实截图"><a href="#真实截图" class="headerlink" title="真实截图"></a>真实截图</h2><p>截图不是拼图，也不是手写终端模拟，而是在 VSCode 最大化后截取的真实代码和运行结果。</p>
+<p><img src="/images/crypto-experiments/detailed/exp01_06_repeating_key_run.png" alt="实验一截图"></p>
+<p><img src="/images/crypto-experiments/detailed/exp02_04_epassport_run.png" alt="实验二截图"></p>
+<p><img src="/images/crypto-experiments/detailed/exp04_02_relations_run.png" alt="实验四截图"></p>
+<h2 id="报告写作原则"><a href="#报告写作原则" class="headerlink" title="报告写作原则"></a>报告写作原则</h2><p>我认为实验报告应该遵守三个原则：</p>
+<ol>
+<li>题目数据不改。</li>
+<li>代码和运行截图一致。</li>
+<li>未恢复或不确定的结果明确说明，不为了完整而补写。</li>
+</ol>
+<p>尤其是 RSA 破译题，当前只恢复了数学关系可以证明的分片。未恢复的 Frame 没有强行编成完整句子，这是比“看起来完整”更重要的真实性。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>好的实验报告不只是把答案贴出来，而是让读者能沿着“题面 -&gt; 数据 -&gt; 代码 -&gt; 测试 -&gt; 运行 -&gt; 截图”完整复查。密码学尤其需要这种习惯，因为一个字节、一个填充位、一个参数复用，都可能决定结果完全不同。</p>
+
+    </div>
+    
+    
+    
+    
+    
+    
+    
+</div>
+
+            <footer id="footer">
+    <div id="footer-wrap">
+        <div>
+            &copy;
+            2025 - 2026 Yin&#39;s Blog
+            <span id="footer-icon">
+                <i class="fa-solid fa-font-awesome fa-fw"></i>
+            </span>
+            &commat;Yin
+        </div>
+        <div>
+            Based on the <a target="_blank" rel="noopener" href="https://hexo.io">Hexo Engine</a> &amp;
+            <a target="_blank" rel="noopener" href="https://github.com/theme-particlex/hexo-theme-particlex">ParticleX Theme</a>
+        </div>
+        
+    </div>
+</footer>
+
+        </div>
+        
+        <transition name="fade">
+            <div id="preview" ref="preview" v-show="previewShow">
+                <img id="preview-content" ref="previewContent" />
+            </div>
+        </transition>
+        
+    </div>
+    <script src="/js/main.js"></script>
+    
+    
+
+
+
+
+    
+</body>
+</html>

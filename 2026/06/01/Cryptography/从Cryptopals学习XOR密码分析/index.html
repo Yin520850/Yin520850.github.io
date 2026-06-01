@@ -1,0 +1,290 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>从 Cryptopals 学习 XOR 密码分析 | Yin&#39;s Blog</title>
+    <meta name="author" content="Yin" />
+    <meta name="description" content="一个热爱技术的开发者的个人博客，分享编程心得和生活感悟" />
+    <meta name="keywords" content="hexo,blog,技术博客,编程,开发" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+    />
+    <link rel="icon" href="/images/avatar.jpg" />
+    <link rel="preconnect" href="https://s4.zstatic.net" />
+<script src="https://s4.zstatic.net/ajax/libs/vue/3.3.7/vue.global.prod.min.js"></script>
+<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.cn" />
+<link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin />
+<link
+    rel="stylesheet"
+    href="https://fonts.googleapis.cn/css2?family=Fira+Code:wght@400;500;600;700&family=Lexend:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;600;700;800;900&display=swap"
+/>
+<script> const mixins = {}; </script>
+
+<script src="https://polyfill.alicdn.com/v3/polyfill.min.js?features=default"></script>
+
+
+<script src="https://s4.zstatic.net/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://s4.zstatic.net/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js"></script>
+<link
+    rel="stylesheet"
+    href="https://s4.zstatic.net/ajax/libs/highlight.js/11.9.0/styles/github.min.css"
+/>
+<script src="/js/lib/highlight.js"></script>
+
+
+
+<script src="/js/lib/preview.js"></script>
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css" />
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+    <div id="layout">
+        <transition name="fade">
+            <div id="loading" v-show="loading">
+                <div id="loading-circle">
+                    <h2>LOADING</h2>
+                    <p>加载过慢请开启缓存 浏览器默认开启</p>
+                    <img src="/images/loading.gif" />
+                </div>
+            </div>
+        </transition>
+        <div id="menu" :class="{ hidden: hiddenMenu, 'menu-color': menuColor}">
+    <nav id="desktop-menu">
+        <a class="title" href="/">
+            <span>YIN&#39;S BLOG</span>
+        </a>
+        
+        <a href="/">
+            <i class="fa-solid fa-house fa-fw"></i>
+            <span>&ensp;Home</span>
+        </a>
+        
+        <a href="/about">
+            <i class="fa-solid fa-id-card fa-fw"></i>
+            <span>&ensp;About</span>
+        </a>
+        
+        <a href="/archives">
+            <i class="fa-solid fa-box-archive fa-fw"></i>
+            <span>&ensp;Archives</span>
+        </a>
+        
+        <a href="/categories">
+            <i class="fa-solid fa-bookmark fa-fw"></i>
+            <span>&ensp;Categories</span>
+        </a>
+        
+        <a href="/tags">
+            <i class="fa-solid fa-tags fa-fw"></i>
+            <span>&ensp;Tags</span>
+        </a>
+        
+    </nav>
+    <nav id="mobile-menu">
+        <div class="title" @click="showMenuItems = !showMenuItems">
+            <i class="fa-solid fa-bars fa-fw"></i>
+            <span>&emsp;YIN&#39;S BLOG</span>
+        </div>
+        <transition name="slide">
+            <div class="items" v-show="showMenuItems">
+                
+                <a href="/">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-house fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Home</div>
+                    </div>
+                </a>
+                
+                <a href="/about">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-id-card fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">About</div>
+                    </div>
+                </a>
+                
+                <a href="/archives">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-box-archive fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Archives</div>
+                    </div>
+                </a>
+                
+                <a href="/categories">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-bookmark fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Categories</div>
+                    </div>
+                </a>
+                
+                <a href="/tags">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-tags fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Tags</div>
+                    </div>
+                </a>
+                
+            </div>
+        </transition>
+    </nav>
+</div>
+<transition name="fade">
+    <div id="menu-curtain" @click="showMenuItems = !showMenuItems" v-show="showMenuItems"></div>
+</transition>
+
+        <div id="main" :class="loading ? 'into-enter-from': 'into-enter-active'">
+            <div class="article">
+    <div>
+        <h1>从 Cryptopals 学习 XOR 密码分析</h1>
+    </div>
+    <div class="info">
+        <span class="date">
+            <span class="icon">
+                <i class="fa-solid fa-calendar fa-fw"></i>
+            </span>
+            2026/6/1
+        </span>
+        
+        <span class="category">
+            <a href="/categories/Cryptography/">
+                <span class="icon">
+                    <i class="fa-solid fa-bookmark fa-fw"></i>
+                </span>
+                Cryptography
+            </a>
+        </span>
+        
+        
+        <span class="tags">
+            <span class="icon">
+                <i class="fa-solid fa-tags fa-fw"></i>
+            </span>
+            
+            
+            <span class="tag">
+                
+                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #ffa2c4">
+                    密码学
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/Cryptopals/" style="color: #03a9f4">
+                    Cryptopals
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/XOR/" style="color: #ff7d73">
+                    XOR
+                </a>
+            </span>
+            
+        </span>
+        
+    </div>
+    
+    <div class="content" v-pre>
+        <h1 id="从-Cryptopals-学习-XOR-密码分析"><a href="#从-Cryptopals-学习-XOR-密码分析" class="headerlink" title="从 Cryptopals 学习 XOR 密码分析"></a>从 Cryptopals 学习 XOR 密码分析</h1><p>Cryptopals Set 1 很适合做密码学入门实验，因为它不是只讲概念，而是把编码、异或、评分函数和统计攻击串成一条线。我的实验代码全部使用 Cryptopals 页面和 challenge-data 文件中的真实数据。</p>
+<p><img src="/images/crypto-experiments/detailed/exp01_06_repeating_key_run.png" alt="实验一运行结果"></p>
+<h2 id="编码不是加密"><a href="#编码不是加密" class="headerlink" title="编码不是加密"></a>编码不是加密</h2><p>第一题要求把十六进制字符串转成 Base64：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d</span><br></pre></td></tr></table></figure>
+
+<p>输出为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t</span><br></pre></td></tr></table></figure>
+
+<p>这一步提醒我们：编码只是表达形式转换，真正的密码分析必须回到原始字节。</p>
+<h2 id="固定-XOR"><a href="#固定-XOR" class="headerlink" title="固定 XOR"></a>固定 XOR</h2><p>固定 XOR 的核心是逐字节异或：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">bytes</span>(a ^ b <span class="keyword">for</span> a, b <span class="keyword">in</span> <span class="built_in">zip</span>(left, right))</span><br></pre></td></tr></table></figure>
+
+<p>Cryptopals 给出的样例验证结果为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">746865206b696420646f6e277420706c6179</span><br></pre></td></tr></table></figure>
+
+<p>如果连这一步都没有用真实样例验证，后面的破译会很容易在无声处出错。</p>
+<h2 id="单字节-XOR：评分函数决定成败"><a href="#单字节-XOR：评分函数决定成败" class="headerlink" title="单字节 XOR：评分函数决定成败"></a>单字节 XOR：评分函数决定成败</h2><p>单字节 XOR 的思路是枚举 <code>0..255</code> 的所有 key，对每个候选明文按英文频率打分。实验恢复出：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">key = 53</span><br><span class="line">plaintext = Now that the party is jumping</span><br></pre></td></tr></table></figure>
+
+<p>这里的 key 是字符 <code>&#39;5&#39;</code> 的 ASCII 值 <code>53</code>。评分函数不需要完美，但必须能惩罚不可打印字符，并奖励空格、<code>e/t/a/o/i/n</code> 等高频字符。</p>
+<h2 id="重复密钥-XOR：先猜-keysize"><a href="#重复密钥-XOR：先猜-keysize" class="headerlink" title="重复密钥 XOR：先猜 keysize"></a>重复密钥 XOR：先猜 keysize</h2><p>重复密钥 XOR 的关键是 Hamming distance。Cryptopals 指定的校验样例是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">this is a test</span><br><span class="line">wokka wokka!!!</span><br><span class="line">distance = 37</span><br></pre></td></tr></table></figure>
+
+<p>通过归一化编辑距离猜测密钥长度，再把密文按密钥位置转置，每一列都当作单字节 XOR 解。真实 challenge-data 恢复出的密钥是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Terminator X: Bring the noise</span><br></pre></td></tr></table></figure>
+
+<h2 id="代码截图"><a href="#代码截图" class="headerlink" title="代码截图"></a>代码截图</h2><p><img src="/images/crypto-experiments/detailed/exp01_06_repeating_key_code.png" alt="实验一代码截图"></p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>XOR 题看起来简单，但它训练了几个后面会反复用到的习惯：所有输入先转 bytes、写样例测试、用统计方法排序候选、对输出做可读性验证。真正有价值的不是“知道 XOR 可逆”，而是能稳定写出不会骗自己的破译程序。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li>Cryptopals Set 1</li>
+<li>Cryptopals challenge-data 4.txt &#x2F; 6.txt</li>
+</ul>
+
+    </div>
+    
+    
+    
+    
+    
+    
+    
+</div>
+
+            <footer id="footer">
+    <div id="footer-wrap">
+        <div>
+            &copy;
+            2025 - 2026 Yin&#39;s Blog
+            <span id="footer-icon">
+                <i class="fa-solid fa-font-awesome fa-fw"></i>
+            </span>
+            &commat;Yin
+        </div>
+        <div>
+            Based on the <a target="_blank" rel="noopener" href="https://hexo.io">Hexo Engine</a> &amp;
+            <a target="_blank" rel="noopener" href="https://github.com/theme-particlex/hexo-theme-particlex">ParticleX Theme</a>
+        </div>
+        
+    </div>
+</footer>
+
+        </div>
+        
+        <transition name="fade">
+            <div id="preview" ref="preview" v-show="previewShow">
+                <img id="preview-content" ref="previewContent" />
+            </div>
+        </transition>
+        
+    </div>
+    <script src="/js/main.js"></script>
+    
+    
+
+
+
+
+    
+</body>
+</html>

@@ -1,0 +1,302 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>RSA 常见漏洞与真实 Frame 破译案例 | Yin&#39;s Blog</title>
+    <meta name="author" content="Yin" />
+    <meta name="description" content="一个热爱技术的开发者的个人博客，分享编程心得和生活感悟" />
+    <meta name="keywords" content="hexo,blog,技术博客,编程,开发" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+    />
+    <link rel="icon" href="/images/avatar.jpg" />
+    <link rel="preconnect" href="https://s4.zstatic.net" />
+<script src="https://s4.zstatic.net/ajax/libs/vue/3.3.7/vue.global.prod.min.js"></script>
+<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.cn" />
+<link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin />
+<link
+    rel="stylesheet"
+    href="https://fonts.googleapis.cn/css2?family=Fira+Code:wght@400;500;600;700&family=Lexend:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;600;700;800;900&display=swap"
+/>
+<script> const mixins = {}; </script>
+
+<script src="https://polyfill.alicdn.com/v3/polyfill.min.js?features=default"></script>
+
+
+<script src="https://s4.zstatic.net/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://s4.zstatic.net/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js"></script>
+<link
+    rel="stylesheet"
+    href="https://s4.zstatic.net/ajax/libs/highlight.js/11.9.0/styles/github.min.css"
+/>
+<script src="/js/lib/highlight.js"></script>
+
+
+
+<script src="/js/lib/preview.js"></script>
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css" />
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+    <div id="layout">
+        <transition name="fade">
+            <div id="loading" v-show="loading">
+                <div id="loading-circle">
+                    <h2>LOADING</h2>
+                    <p>加载过慢请开启缓存 浏览器默认开启</p>
+                    <img src="/images/loading.gif" />
+                </div>
+            </div>
+        </transition>
+        <div id="menu" :class="{ hidden: hiddenMenu, 'menu-color': menuColor}">
+    <nav id="desktop-menu">
+        <a class="title" href="/">
+            <span>YIN&#39;S BLOG</span>
+        </a>
+        
+        <a href="/">
+            <i class="fa-solid fa-house fa-fw"></i>
+            <span>&ensp;Home</span>
+        </a>
+        
+        <a href="/about">
+            <i class="fa-solid fa-id-card fa-fw"></i>
+            <span>&ensp;About</span>
+        </a>
+        
+        <a href="/archives">
+            <i class="fa-solid fa-box-archive fa-fw"></i>
+            <span>&ensp;Archives</span>
+        </a>
+        
+        <a href="/categories">
+            <i class="fa-solid fa-bookmark fa-fw"></i>
+            <span>&ensp;Categories</span>
+        </a>
+        
+        <a href="/tags">
+            <i class="fa-solid fa-tags fa-fw"></i>
+            <span>&ensp;Tags</span>
+        </a>
+        
+    </nav>
+    <nav id="mobile-menu">
+        <div class="title" @click="showMenuItems = !showMenuItems">
+            <i class="fa-solid fa-bars fa-fw"></i>
+            <span>&emsp;YIN&#39;S BLOG</span>
+        </div>
+        <transition name="slide">
+            <div class="items" v-show="showMenuItems">
+                
+                <a href="/">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-house fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Home</div>
+                    </div>
+                </a>
+                
+                <a href="/about">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-id-card fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">About</div>
+                    </div>
+                </a>
+                
+                <a href="/archives">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-box-archive fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Archives</div>
+                    </div>
+                </a>
+                
+                <a href="/categories">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-bookmark fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Categories</div>
+                    </div>
+                </a>
+                
+                <a href="/tags">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-tags fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Tags</div>
+                    </div>
+                </a>
+                
+            </div>
+        </transition>
+    </nav>
+</div>
+<transition name="fade">
+    <div id="menu-curtain" @click="showMenuItems = !showMenuItems" v-show="showMenuItems"></div>
+</transition>
+
+        <div id="main" :class="loading ? 'into-enter-from': 'into-enter-active'">
+            <div class="article">
+    <div>
+        <h1>RSA 常见漏洞与真实 Frame 破译案例</h1>
+    </div>
+    <div class="info">
+        <span class="date">
+            <span class="icon">
+                <i class="fa-solid fa-calendar fa-fw"></i>
+            </span>
+            2026/6/1
+        </span>
+        
+        <span class="category">
+            <a href="/categories/Cryptography/">
+                <span class="icon">
+                    <i class="fa-solid fa-bookmark fa-fw"></i>
+                </span>
+                Cryptography
+            </a>
+        </span>
+        
+        
+        <span class="tags">
+            <span class="icon">
+                <i class="fa-solid fa-tags fa-fw"></i>
+            </span>
+            
+            
+            <span class="tag">
+                
+                <a href="/tags/CTF/" style="color: #00bcd4">
+                    CTF
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #00a596">
+                    密码学
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/RSA/" style="color: #ffa2c4">
+                    RSA
+                </a>
+            </span>
+            
+        </span>
+        
+    </div>
+    
+    <div class="content" v-pre>
+        <h1 id="RSA-常见漏洞与真实-Frame-破译案例"><a href="#RSA-常见漏洞与真实-Frame-破译案例" class="headerlink" title="RSA 常见漏洞与真实 Frame 破译案例"></a>RSA 常见漏洞与真实 Frame 破译案例</h1><p>RSA 的数学形式很简洁：选取两个大素数 <code>p, q</code>，计算 <code>N = pq</code>，再选取公钥指数 <code>e</code> 和私钥指数 <code>d</code>，满足 <code>ed ≡ 1 (mod φ(N))</code>。安全性并不只来自公式本身，而来自参数生成、填充方式和使用方式都没有出错。</p>
+<p>这次实验使用的是“RSA 加密体制破译题目”给出的真实截获数据。每个 <code>Frame</code> 都是 3072 bit 十六进制串，结构为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1024-bit N | 1024-bit e | 1024-bit ciphertext</span><br></pre></td></tr></table></figure>
+
+<p>下面的截图是本地 VSCode 中运行破译脚本后的真实输出。</p>
+<p><img src="/images/crypto-experiments/detailed/exp04_03_attacks_run.png" alt="RSA 运行结果"></p>
+<h2 id="公共模数攻击"><a href="#公共模数攻击" class="headerlink" title="公共模数攻击"></a>公共模数攻击</h2><p>如果同一个明文 <code>m</code> 被同一个模数 <code>N</code>、不同且互素的指数 <code>e1, e2</code> 加密：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">c1 = m^e1 mod N</span><br><span class="line">c2 = m^e2 mod N</span><br><span class="line">gcd(e1, e2) = 1</span><br></pre></td></tr></table></figure>
+
+<p>就可以用扩展欧几里得算法找到 <code>a, b</code>，使得：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">a e1 + b e2 = 1</span><br></pre></td></tr></table></figure>
+
+<p>于是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">c1^a c2^b ≡ m^(a e1 + b e2) ≡ m mod N</span><br></pre></td></tr></table></figure>
+
+<p>在本次真实数据中，<code>Frame0</code> 和 <code>Frame4</code> 共用同一个 <code>N</code>，且指数互素，因此恢复出分片：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">seq=0 chunk=&#x27;My secre&#x27;</span><br></pre></td></tr></table></figure>
+
+<h2 id="共享素因子攻击"><a href="#共享素因子攻击" class="headerlink" title="共享素因子攻击"></a>共享素因子攻击</h2><p>如果两个不同模数复用了一个素因子：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">N1 = p q1</span><br><span class="line">N2 = p q2</span><br></pre></td></tr></table></figure>
+
+<p>那么：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcd(N1, N2) = p</span><br></pre></td></tr></table></figure>
+
+<p>一旦拿到 <code>p</code>，就可以分解 <code>N</code>，计算 <code>φ(N)</code> 和私钥 <code>d</code>。本次数据里 <code>Frame1</code> 与 <code>Frame18</code> 共享 512 位素因子，恢复出：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Frame18: seq=10 chunk=&#x27;m A to B&#x27;</span><br><span class="line">Frame1 : seq=11 chunk=&#x27;. Imagin&#x27;</span><br></pre></td></tr></table></figure>
+
+<h2 id="Hastad-广播攻击"><a href="#Hastad-广播攻击" class="headerlink" title="Hastad 广播攻击"></a>Hastad 广播攻击</h2><p>当同一明文用小指数 <code>e</code> 发给多个互素模数接收方，且没有随机填充时，可用中国剩余定理合并密文：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">c_i = m^e mod N_i</span><br></pre></td></tr></table></figure>
+
+<p>得到整数意义下的 <code>m^e</code>，再开 <code>e</code> 次方恢复 <code>m</code>。实验数据中有 5 个 <code>e = 5</code> 的 Frame，可恢复分片：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">seq=1 chunk=&#x27;t is a f&#x27;</span><br></pre></td></tr></table></figure>
+
+<h2 id="实验代码片段"><a href="#实验代码片段" class="headerlink" title="实验代码片段"></a>实验代码片段</h2><p>下面是本地实现公共模数、共享素因子和广播攻击的代码截图。</p>
+<p><img src="/images/crypto-experiments/detailed/exp04_03_attacks_code.png" alt="RSA 代码截图"></p>
+<h2 id="本次恢复结果"><a href="#本次恢复结果" class="headerlink" title="本次恢复结果"></a>本次恢复结果</h2><p>本次严格只使用真实截获数据中能被数学关系证明的部分，不补写未恢复内容。最终恢复的片段为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">My secret is a fm A to B. Imagin</span><br></pre></td></tr></table></figure>
+
+<p>未恢复 Frame 没有在已检查范围内表现出可验证的公共模数、共享素因子或广播关系，所以保留为未恢复状态。这一点很重要：密码分析报告不应该为了完整故事而编造明文。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li>首届全国高校密码数学挑战赛：RSA 加密体制破译题目</li>
+<li>Dan Boneh, Twenty Years of Attacks on the RSA Cryptosystem</li>
+<li>Cryptopals Set 5 Challenge 39: Implement RSA</li>
+</ul>
+
+    </div>
+    
+    
+    
+    
+    
+    
+    
+</div>
+
+            <footer id="footer">
+    <div id="footer-wrap">
+        <div>
+            &copy;
+            2025 - 2026 Yin&#39;s Blog
+            <span id="footer-icon">
+                <i class="fa-solid fa-font-awesome fa-fw"></i>
+            </span>
+            &commat;Yin
+        </div>
+        <div>
+            Based on the <a target="_blank" rel="noopener" href="https://hexo.io">Hexo Engine</a> &amp;
+            <a target="_blank" rel="noopener" href="https://github.com/theme-particlex/hexo-theme-particlex">ParticleX Theme</a>
+        </div>
+        
+    </div>
+</footer>
+
+        </div>
+        
+        <transition name="fade">
+            <div id="preview" ref="preview" v-show="previewShow">
+                <img id="preview-content" ref="previewContent" />
+            </div>
+        </transition>
+        
+    </div>
+    <script src="/js/main.js"></script>
+    
+    
+
+
+
+
+    
+</body>
+</html>
