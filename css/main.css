@@ -773,6 +773,61 @@ pre {
     overflow: hidden;
     white-space: normal;
 }
+figure.highlight {
+    background: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 4px;
+    box-shadow: none;
+    margin: 18px 0;
+    overflow: auto;
+}
+figure.highlight table {
+    border-collapse: collapse;
+    margin: 0;
+    width: 100%;
+}
+figure.highlight table:not(.hljs-ln) {
+    margin: 0;
+}
+figure.highlight table tr,
+figure.highlight table td {
+    background: transparent !important;
+    border: 0;
+    border-radius: 0 !important;
+    padding: 0 !important;
+}
+figure.highlight .gutter {
+    background: #f0f2f4;
+    border-right: 1px solid #d0d7de;
+    color: #8c959f;
+    text-align: right;
+    user-select: none;
+    width: 1%;
+}
+figure.highlight .code {
+    background: #f6f8fa;
+}
+figure.highlight pre {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    line-height: 1.65;
+    margin: 0;
+    overflow: visible;
+    padding: 12px 14px;
+    white-space: pre;
+}
+figure.highlight .line {
+    min-height: 1.65em;
+}
+figure.highlight .gutter pre {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+figure.highlight .code pre {
+    padding-left: 14px;
+}
 pre,
 code,
 .hljs,
