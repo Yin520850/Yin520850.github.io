@@ -178,7 +178,7 @@
             
             <span class="tag">
                 
-                <a href="/tags/CTF/" style="color: #03a9f4">
+                <a href="/tags/CTF/" style="color: #00bcd4">
                     CTF
                 </a>
             </span>
@@ -202,49 +202,118 @@
     </div>
     
     <div class="content" v-pre>
-        <h1 id="RSA-常见漏洞与真实-Frame-破译案例"><a href="#RSA-常见漏洞与真实-Frame-破译案例" class="headerlink" title="RSA 常见漏洞与真实 Frame 破译案例"></a>RSA 常见漏洞与真实 Frame 破译案例</h1><p>RSA 的数学形式很简洁：选取两个大素数 <code>p, q</code>，计算 <code>N = pq</code>，再选取公钥指数 <code>e</code> 和私钥指数 <code>d</code>，满足 <code>ed ≡ 1 (mod φ(N))</code>。安全性并不只来自公式本身，而来自参数生成、填充方式和使用方式都没有出错。</p>
-<p>这次实验使用的是“RSA 加密体制破译题目”给出的真实截获数据。每个 <code>Frame</code> 都是 3072 bit 十六进制串，结构为：</p>
+        <h1 id="RSA-常见漏洞与真实-Frame-破译案例"><a href="#RSA-常见漏洞与真实-Frame-破译案例" class="headerlink" title="RSA 常见漏洞与真实 Frame 破译案例"></a>RSA 常见漏洞与真实 Frame 破译案例</h1><p>这篇文章记录一次 RSA 破译实验。数据来自“RSA 加密体制破译题目”的真实附件，不使用自造小数据。</p>
+<p>题目给出的每个 Frame 都是一个 3072 bit 的十六进制字符串，结构如下：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">1024-bit N | 1024-bit e | 1024-bit ciphertext</span><br></pre></td></tr></table></figure>
 
-<p>下面的截图是本地 VSCode 中运行破译脚本后的真实输出。</p>
-<p><img src="/images/crypto-experiments/detailed/exp04_03_attacks_run.png" alt="RSA 运行结果"></p>
-<h2 id="公共模数攻击"><a href="#公共模数攻击" class="headerlink" title="公共模数攻击"></a>公共模数攻击</h2><p>如果同一个明文 <code>m</code> 被同一个模数 <code>N</code>、不同且互素的指数 <code>e1, e2</code> 加密：</p>
+<p>也就是说，每个 Frame 里都包含：</p>
+<ol>
+<li>RSA 模数 <code>N</code></li>
+<li>公钥指数 <code>e</code></li>
+<li>密文 <code>c = m^e mod N</code></li>
+</ol>
+<p>实验目标是从这些截获数据中恢复尽可能多的明文分片。</p>
+<h2 id="1-先解析-Frame-文件"><a href="#1-先解析-Frame-文件" class="headerlink" title="1. 先解析 Frame 文件"></a>1. 先解析 Frame 文件</h2><p>Frame 文件长度固定是 768 个十六进制字符：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">256 hex chars for N</span><br><span class="line">256 hex chars for e</span><br><span class="line">256 hex chars for c</span><br></pre></td></tr></table></figure>
+
+<p>解析代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass</span><br><span class="line"><span class="keyword">from</span> pathlib <span class="keyword">import</span> Path</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass(<span class="params">frozen=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Frame</span>:</span><br><span class="line">    name: <span class="built_in">str</span></span><br><span class="line">    n: <span class="built_in">int</span></span><br><span class="line">    e: <span class="built_in">int</span></span><br><span class="line">    c: <span class="built_in">int</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">load_frames</span>(<span class="params">directory: Path</span>) -&gt; <span class="built_in">list</span>[Frame]:</span><br><span class="line">    frames = []</span><br><span class="line">    <span class="keyword">for</span> path <span class="keyword">in</span> <span class="built_in">sorted</span>(directory.glob(<span class="string">&quot;Frame*&quot;</span>), key=<span class="keyword">lambda</span> p: <span class="built_in">int</span>(p.name.replace(<span class="string">&quot;Frame&quot;</span>, <span class="string">&quot;&quot;</span>))):</span><br><span class="line">        text = path.read_text(encoding=<span class="string">&quot;ascii&quot;</span>).strip()</span><br><span class="line">        <span class="keyword">if</span> <span class="built_in">len</span>(text) != <span class="number">768</span>:</span><br><span class="line">            <span class="keyword">raise</span> ValueError(<span class="string">f&quot;<span class="subst">&#123;path&#125;</span> is not a 3072-bit hexadecimal frame&quot;</span>)</span><br><span class="line">        frames.append(</span><br><span class="line">            Frame(</span><br><span class="line">                path.name,</span><br><span class="line">                <span class="built_in">int</span>(text[:<span class="number">256</span>], <span class="number">16</span>),</span><br><span class="line">                <span class="built_in">int</span>(text[<span class="number">256</span>:<span class="number">512</span>], <span class="number">16</span>),</span><br><span class="line">                <span class="built_in">int</span>(text[<span class="number">512</span>:], <span class="number">16</span>),</span><br><span class="line">            )</span><br><span class="line">        )</span><br><span class="line">    <span class="keyword">return</span> frames</span><br></pre></td></tr></table></figure>
+
+<p>运行解析脚本：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python work\experiment_04_rsa_challenge\<span class="number">01</span>_parse_frame_files.py</span><br></pre></td></tr></table></figure>
+
+<p>解析结果截图：</p>
+<p><img src="/images/crypto-experiments/detailed/exp04_01_parse_run.png" alt="Frame 解析运行截图"></p>
+<p>可以看到一共有 21 个 Frame，唯一模数数量是 20，说明至少存在一个模数被复用。</p>
+<h2 id="2-检查可疑关系"><a href="#2-检查可疑关系" class="headerlink" title="2. 检查可疑关系"></a>2. 检查可疑关系</h2><p>RSA 参数错误通常不是直接看明文，而是先检查参数之间有没有危险关系。</p>
+<p>本实验检查三类：</p>
+<ol>
+<li>是否有相同模数 <code>N</code></li>
+<li>是否有不同模数共享素因子</li>
+<li>是否有小指数广播关系</li>
+</ol>
+<p>关系分析脚本：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">analyze_frame_relations</span>(<span class="params">frames: <span class="built_in">list</span>[Frame]</span>) -&gt; <span class="built_in">list</span>[<span class="built_in">str</span>]:</span><br><span class="line">    lines = []</span><br><span class="line">    <span class="keyword">for</span> left, right <span class="keyword">in</span> combinations(frames, <span class="number">2</span>):</span><br><span class="line">        factor = math.gcd(left.n, right.n)</span><br><span class="line">        <span class="keyword">if</span> <span class="number">1</span> &lt; factor &lt; left.n:</span><br><span class="line">            lines.append(<span class="string">f&quot;shared factor: <span class="subst">&#123;left.name&#125;</span> / <span class="subst">&#123;right.name&#125;</span>, factor_bits=<span class="subst">&#123;factor.bit_length()&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="keyword">if</span> left.n == right.n:</span><br><span class="line">            lines.append(</span><br><span class="line">                <span class="string">f&quot;same modulus: <span class="subst">&#123;left.name&#125;</span> / <span class="subst">&#123;right.name&#125;</span>, gcd(e1,e2)=<span class="subst">&#123;math.gcd(left.e, right.e)&#125;</span>&quot;</span></span><br><span class="line">            )</span><br><span class="line"></span><br><span class="line">    by_e = &#123;&#125;</span><br><span class="line">    <span class="keyword">for</span> frame <span class="keyword">in</span> frames:</span><br><span class="line">        by_e.setdefault(frame.e, []).append(frame.name)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> e, names <span class="keyword">in</span> by_e.items():</span><br><span class="line">        lines.append(<span class="string">f&quot;same exponent group: e=<span class="subst">&#123;e&#125;</span>, count=<span class="subst">&#123;<span class="built_in">len</span>(names)&#125;</span>, frames=<span class="subst">&#123;<span class="string">&#x27;,&#x27;</span>.join(names)&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> lines</span><br></pre></td></tr></table></figure>
+
+<p>真实运行截图：</p>
+<p><img src="/images/crypto-experiments/detailed/exp04_02_relations_run.png" alt="RSA 关系分析截图"></p>
+<p>关键发现：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Frame0 / Frame4 使用相同模数，且 gcd(e1,e2)=1</span><br><span class="line">Frame1 / Frame18 共享 512-bit 素因子</span><br><span class="line">e=5 的 Frame 有 5 个</span><br><span class="line">e=3 的 Frame 有 3 个</span><br></pre></td></tr></table></figure>
+
+<p>这说明至少可以尝试三种攻击：</p>
+<ol>
+<li>公共模数攻击</li>
+<li>共享素因子分解</li>
+<li>Hastad 广播攻击</li>
+</ol>
+<h2 id="3-公共模数攻击"><a href="#3-公共模数攻击" class="headerlink" title="3. 公共模数攻击"></a>3. 公共模数攻击</h2><p>如果同一个明文 <code>m</code> 被同一个 <code>N</code>、两个互素指数加密：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">c1 = m^e1 mod N</span><br><span class="line">c2 = m^e2 mod N</span><br><span class="line">gcd(e1, e2) = 1</span><br></pre></td></tr></table></figure>
 
-<p>就可以用扩展欧几里得算法找到 <code>a, b</code>，使得：</p>
+<p>用扩展欧几里得可以找到：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">a e1 + b e2 = 1</span><br></pre></td></tr></table></figure>
 
 <p>于是：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">c1^a c2^b ≡ m^(a e1 + b e2) ≡ m mod N</span><br></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">c1^a c2^b = m^(a e1 + b e2) = m mod N</span><br></pre></td></tr></table></figure>
 
-<p>在本次真实数据中，<code>Frame0</code> 和 <code>Frame4</code> 共用同一个 <code>N</code>，且指数互素，因此恢复出分片：</p>
+<p>代码核心：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">_, a, b = egcd(left.e, right.e)</span><br><span class="line"></span><br><span class="line">left_part = <span class="built_in">pow</span>(left.c, a, left.n) <span class="keyword">if</span> a &gt;= <span class="number">0</span> <span class="keyword">else</span> <span class="built_in">pow</span>(invmod(left.c, left.n), -a, left.n)</span><br><span class="line">right_part = <span class="built_in">pow</span>(right.c, b, right.n) <span class="keyword">if</span> b &gt;= <span class="number">0</span> <span class="keyword">else</span> <span class="built_in">pow</span>(invmod(right.c, right.n), -b, right.n)</span><br><span class="line"></span><br><span class="line">message = (left_part * right_part) % left.n</span><br></pre></td></tr></table></figure>
+
+<p>本题中 <code>Frame0</code> 和 <code>Frame4</code> 满足条件，恢复：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">seq=0 chunk=&#x27;My secre&#x27;</span><br></pre></td></tr></table></figure>
 
-<h2 id="共享素因子攻击"><a href="#共享素因子攻击" class="headerlink" title="共享素因子攻击"></a>共享素因子攻击</h2><p>如果两个不同模数复用了一个素因子：</p>
+<h2 id="4-共享素因子攻击"><a href="#4-共享素因子攻击" class="headerlink" title="4. 共享素因子攻击"></a>4. 共享素因子攻击</h2><p>如果两个模数共享一个素因子：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">N1 = p q1</span><br><span class="line">N2 = p q2</span><br></pre></td></tr></table></figure>
 
 <p>那么：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcd(N1, N2) = p</span><br></pre></td></tr></table></figure>
 
-<p>一旦拿到 <code>p</code>，就可以分解 <code>N</code>，计算 <code>φ(N)</code> 和私钥 <code>d</code>。本次数据里 <code>Frame1</code> 与 <code>Frame18</code> 共享 512 位素因子，恢复出：</p>
+<p>拿到 <code>p</code> 后就能分解 <code>N</code>，计算：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">φ(N) = (p - 1)(q - 1)</span><br><span class="line">d = e^(-1) mod φ(N)</span><br></pre></td></tr></table></figure>
+
+<p>核心代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">factor = math.gcd(left.n, right.n)</span><br><span class="line"><span class="keyword">if</span> <span class="number">1</span> &lt; factor &lt; left.n:</span><br><span class="line">    p = factor</span><br><span class="line">    q = frame.n // factor</span><br><span class="line">    phi = (p - <span class="number">1</span>) * (q - <span class="number">1</span>)</span><br><span class="line">    d = invmod(frame.e, phi)</span><br><span class="line">    message = <span class="built_in">pow</span>(frame.c, d, frame.n)</span><br></pre></td></tr></table></figure>
+
+<p>本题中 <code>Frame1</code> 和 <code>Frame18</code> 共享 512-bit 因子，恢复：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Frame18: seq=10 chunk=&#x27;m A to B&#x27;</span><br><span class="line">Frame1 : seq=11 chunk=&#x27;. Imagin&#x27;</span><br></pre></td></tr></table></figure>
 
-<h2 id="Hastad-广播攻击"><a href="#Hastad-广播攻击" class="headerlink" title="Hastad 广播攻击"></a>Hastad 广播攻击</h2><p>当同一明文用小指数 <code>e</code> 发给多个互素模数接收方，且没有随机填充时，可用中国剩余定理合并密文：</p>
+<h2 id="5-Hastad-广播攻击"><a href="#5-Hastad-广播攻击" class="headerlink" title="5. Hastad 广播攻击"></a>5. Hastad 广播攻击</h2><p>如果同一明文用小指数 <code>e</code> 加密给多个不同接收方：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">c_i = m^e mod N_i</span><br></pre></td></tr></table></figure>
 
-<p>得到整数意义下的 <code>m^e</code>，再开 <code>e</code> 次方恢复 <code>m</code>。实验数据中有 5 个 <code>e = 5</code> 的 Frame，可恢复分片：</p>
+<p>并且模数两两互素、数量不少于 <code>e</code>，可以用中国剩余定理合并得到：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">C = m^e</span><br></pre></td></tr></table></figure>
+
+<p>然后对 <code>C</code> 开 <code>e</code> 次方恢复 <code>m</code>。</p>
+<p>本题中有 5 个 <code>e=5</code> 的 Frame：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Frame3, Frame8, Frame12, Frame16, Frame20</span><br></pre></td></tr></table></figure>
+
+<p>满足广播攻击条件，恢复：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">seq=1 chunk=&#x27;t is a f&#x27;</span><br></pre></td></tr></table></figure>
 
-<h2 id="实验代码片段"><a href="#实验代码片段" class="headerlink" title="实验代码片段"></a>实验代码片段</h2><p>下面是本地实现公共模数、共享素因子和广播攻击的代码截图。</p>
-<p><img src="/images/crypto-experiments/detailed/exp04_03_attacks_code.png" alt="RSA 代码截图"></p>
-<h2 id="本次恢复结果"><a href="#本次恢复结果" class="headerlink" title="本次恢复结果"></a>本次恢复结果</h2><p>本次严格只使用真实截获数据中能被数学关系证明的部分，不补写未恢复内容。最终恢复的片段为：</p>
+<h2 id="6-攻击脚本运行结果"><a href="#6-攻击脚本运行结果" class="headerlink" title="6. 攻击脚本运行结果"></a>6. 攻击脚本运行结果</h2><p>运行脚本：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python work\experiment_04_rsa_challenge\<span class="number">03</span>_run_rsa_attacks.py</span><br></pre></td></tr></table></figure>
+
+<p>真实截图：</p>
+<p><img src="/images/crypto-experiments/detailed/exp04_03_attacks_run.png" alt="RSA 攻击运行截图"></p>
+<p>恢复结果：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Frame0 : My secre</span><br><span class="line">Frame4 : My secre</span><br><span class="line">Frame3/8/12/16/20 : t is a f</span><br><span class="line">Frame18: m A to B</span><br><span class="line">Frame1 : . Imagin</span><br></pre></td></tr></table></figure>
+
+<p>按通信序号拼接可验证片段：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">My secret is a fm A to B. Imagin</span><br></pre></td></tr></table></figure>
 
-<p>未恢复 Frame 没有在已检查范围内表现出可验证的公共模数、共享素因子或广播关系，所以保留为未恢复状态。这一点很重要：密码分析报告不应该为了完整故事而编造明文。</p>
+<p>这里必须强调：没有恢复出的 Frame 不应该靠猜补全。报告里只写数学关系能证明恢复的部分。</p>
+<h2 id="7-代码截图"><a href="#7-代码截图" class="headerlink" title="7. 代码截图"></a>7. 代码截图</h2><p><img src="/images/crypto-experiments/detailed/exp04_03_attacks_code.png" alt="RSA 攻击代码截图"></p>
+<h2 id="8-常见问题"><a href="#8-常见问题" class="headerlink" title="8. 常见问题"></a>8. 常见问题</h2><h3 id="8-1-看到-e-3-就直接广播"><a href="#8-1-看到-e-3-就直接广播" class="headerlink" title="8.1 看到 e&#x3D;3 就直接广播"></a>8.1 看到 e&#x3D;3 就直接广播</h3><p>不一定。必须满足同一明文、模数两两互素、数量不少于 e，并且合并后能精确开方。本题 e&#x3D;3 的三个帧没有直接恢复。</p>
+<h3 id="8-2-公共模数攻击忘记负指数"><a href="#8-2-公共模数攻击忘记负指数" class="headerlink" title="8.2 公共模数攻击忘记负指数"></a>8.2 公共模数攻击忘记负指数</h3><p>扩展欧几里得求出的 <code>a</code> 或 <code>b</code> 可能是负数。负指数需要先求模逆。</p>
+<h3 id="8-3-共享因子只检查相邻-Frame"><a href="#8-3-共享因子只检查相邻-Frame" class="headerlink" title="8.3 共享因子只检查相邻 Frame"></a>8.3 共享因子只检查相邻 Frame</h3><p>不能只检查相邻文件。应该对所有 Frame 两两计算 gcd。</p>
+<h3 id="8-4-明文分片重复"><a href="#8-4-明文分片重复" class="headerlink" title="8.4 明文分片重复"></a>8.4 明文分片重复</h3><p>题目说明可能重复发送某个明文分片，所以恢复结果里同一个 chunk 可能出现在多个 Frame。</p>
+<h2 id="9-小结"><a href="#9-小结" class="headerlink" title="9. 小结"></a>9. 小结</h2><p>本实验的完整流程是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">解析 Frame</span><br><span class="line">统计 N/e/c</span><br><span class="line">检查相同模数</span><br><span class="line">两两 gcd 找共享因子</span><br><span class="line">按小指数分组做广播攻击</span><br><span class="line">解出 padding 后的明文分片</span><br><span class="line">只报告可验证结果</span><br></pre></td></tr></table></figure>
+
+<p>RSA 本身不是因为公式简单就不安全，而是参数和填充使用不当会造成严重问题。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
-<li>首届全国高校密码数学挑战赛：RSA 加密体制破译题目</li>
+<li>RSA 加密体制破译题目 PDF 与附件数据</li>
 <li>Dan Boneh, Twenty Years of Attacks on the RSA Cryptosystem</li>
-<li>Cryptopals Set 5 Challenge 39: Implement RSA</li>
+<li>Cryptopals Set 5 Challenge 39</li>
 </ul>
 
     </div>

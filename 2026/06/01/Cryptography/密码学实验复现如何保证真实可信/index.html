@@ -178,21 +178,21 @@
             
             <span class="tag">
                 
-                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #ff7d73">
+                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #ffa2c4">
                     密码学
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/%E5%AE%9E%E9%AA%8C%E6%8A%A5%E5%91%8A/" style="color: #00bcd4">
+                <a href="/tags/%E5%AE%9E%E9%AA%8C%E6%8A%A5%E5%91%8A/" style="color: #00a596">
                     实验报告
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="color: #00a596">
+                <a href="/tags/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/" style="color: #03a9f4">
                     工程实践
                 </a>
             </span>
@@ -202,45 +202,104 @@
     </div>
     
     <div class="content" v-pre>
-        <h1 id="密码学实验复现如何保证真实可信"><a href="#密码学实验复现如何保证真实可信" class="headerlink" title="密码学实验复现如何保证真实可信"></a>密码学实验复现如何保证真实可信</h1><p>密码学实验最怕两件事：一是用自己编的小数据假装完成，二是截图和代码对不上。为了避免这两个问题，我把本次实验拆成了证据、代码、运行日志和截图四类材料。</p>
-<h2 id="证据先行"><a href="#证据先行" class="headerlink" title="证据先行"></a>证据先行</h2><p>所有公开题面先保存到本地：</p>
-<ul>
-<li>Cryptopals Set 1 &#x2F; Set 2 页面。</li>
-<li>Cryptopals challenge-data 文件。</li>
-<li>MysteryTwister C3 的 SHA1 和 ePassport PDF。</li>
-<li>Project Euler 182 页面。</li>
-<li>RSA 破译题本地 PDF 和 Frame 附件。</li>
-</ul>
-<p>这样报告里每个输入都能追到来源，而不是从记忆里复制。</p>
-<h2 id="测试先行"><a href="#测试先行" class="headerlink" title="测试先行"></a>测试先行</h2><p>本次代码先写了 <code>unittest</code>，用平台样例做断言：</p>
-<p><img src="/images/crypto-experiments/detailed/all_tests_after_refactor.png" alt="全量测试截图"></p>
-<p>测试覆盖了：</p>
-<ul>
-<li>hex 转 base64。</li>
-<li>fixed XOR。</li>
-<li>单字节 XOR。</li>
-<li>Hamming distance。</li>
-<li>AES-CBC 解密。</li>
-<li>ePassport MRZ 缺失字符和明文。</li>
-<li>Project Euler 182 答案。</li>
-<li>RSA Frame 解析和恢复。</li>
-</ul>
-<h2 id="运行日志"><a href="#运行日志" class="headerlink" title="运行日志"></a>运行日志</h2><p>每个实验单独运行并保存日志：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">work/runs/01_experiment1.log</span><br><span class="line">work/runs/02_experiment2.log</span><br><span class="line">work/runs/03_experiment3.log</span><br><span class="line">work/runs/04_experiment4.log</span><br></pre></td></tr></table></figure>
-
-<p>报告中的结果来自这些日志，不重新手写。</p>
-<h2 id="真实截图"><a href="#真实截图" class="headerlink" title="真实截图"></a>真实截图</h2><p>截图不是拼图，也不是手写终端模拟，而是在 VSCode 最大化后截取的真实代码和运行结果。</p>
-<p><img src="/images/crypto-experiments/detailed/exp01_06_repeating_key_run.png" alt="实验一截图"></p>
-<p><img src="/images/crypto-experiments/detailed/exp02_04_epassport_run.png" alt="实验二截图"></p>
-<p><img src="/images/crypto-experiments/detailed/exp04_02_relations_run.png" alt="实验四截图"></p>
-<h2 id="报告写作原则"><a href="#报告写作原则" class="headerlink" title="报告写作原则"></a>报告写作原则</h2><p>我认为实验报告应该遵守三个原则：</p>
+        <h1 id="密码学实验复现如何保证真实可信"><a href="#密码学实验复现如何保证真实可信" class="headerlink" title="密码学实验复现如何保证真实可信"></a>密码学实验复现如何保证真实可信</h1><p>这篇文章不是讲某一个具体算法，而是记录我整理密码学实验时采用的一套方法。</p>
+<p>做实验报告最怕两个问题：</p>
 <ol>
-<li>题目数据不改。</li>
-<li>代码和运行截图一致。</li>
-<li>未恢复或不确定的结果明确说明，不为了完整而补写。</li>
+<li>数据不是题目给的，而是自己随便造的。</li>
+<li>代码、运行结果、截图和报告对不上。</li>
 </ol>
-<p>尤其是 RSA 破译题，当前只恢复了数学关系可以证明的分片。未恢复的 Frame 没有强行编成完整句子，这是比“看起来完整”更重要的真实性。</p>
-<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>好的实验报告不只是把答案贴出来，而是让读者能沿着“题面 -&gt; 数据 -&gt; 代码 -&gt; 测试 -&gt; 运行 -&gt; 截图”完整复查。密码学尤其需要这种习惯，因为一个字节、一个填充位、一个参数复用，都可能决定结果完全不同。</p>
+<p>为了避免这两个问题，我把整个实验整理成了下面这种结构：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">work/</span><br><span class="line">  evidence/</span><br><span class="line">  experiment_01_cryptopals_xor/</span><br><span class="line">  experiment_02_aes_modes/</span><br><span class="line">  experiment_03_rsa_math/</span><br><span class="line">  experiment_04_rsa_challenge/</span><br><span class="line">  runs/</span><br><span class="line">  screenshots/</span><br><span class="line">  reports/</span><br><span class="line">  src/</span><br></pre></td></tr></table></figure>
+
+<h2 id="1-保存题面和数据"><a href="#1-保存题面和数据" class="headerlink" title="1. 保存题面和数据"></a>1. 保存题面和数据</h2><p>首先把能公开访问的题面和数据保存到 <code>work/evidence</code>。</p>
+<p>包括：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Cryptopals Set 1 页面</span><br><span class="line">Cryptopals Set 2 页面</span><br><span class="line">Cryptopals challenge-data/4.txt</span><br><span class="line">Cryptopals challenge-data/6.txt</span><br><span class="line">Cryptopals challenge-data/10.txt</span><br><span class="line">MysteryTwister C3 SHA1 PDF</span><br><span class="line">MysteryTwister C3 ePassport PDF</span><br><span class="line">Project Euler 182 页面</span><br><span class="line">RSA 破译题 PDF 和 Frame 附件</span><br></pre></td></tr></table></figure>
+
+<p>这样后面写报告时，每一个输入都能说明来源。</p>
+<h2 id="2-每个实验单独建目录"><a href="#2-每个实验单独建目录" class="headerlink" title="2. 每个实验单独建目录"></a>2. 每个实验单独建目录</h2><p>一开始我把很多逻辑放在大脚本里，虽然能跑，但不适合写报告和截图。后来改成每个实验一个目录，每个子问题一个脚本。</p>
+<p>实验一：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">work/experiment_01_cryptopals_xor/</span><br><span class="line">  01_convert_hex_to_base64.py</span><br><span class="line">  02_fixed_xor_buffers.py</span><br><span class="line">  03_break_single_byte_xor.py</span><br><span class="line">  04_detect_single_character_xor.py</span><br><span class="line">  05_implement_repeating_key_xor.py</span><br><span class="line">  06_break_repeating_key_xor.py</span><br><span class="line">  07_crack_mtc3_sha1_password.py</span><br></pre></td></tr></table></figure>
+
+<p>实验二：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">work/experiment_02_aes_modes/</span><br><span class="line">  01_apply_pkcs7_padding.py</span><br><span class="line">  02_decrypt_aes_cbc_mode.py</span><br><span class="line">  03_detect_ecb_or_cbc_oracle.py</span><br><span class="line">  04_recover_mtc3_epassport_message.py</span><br></pre></td></tr></table></figure>
+
+<p>实验三：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">work/experiment_03_rsa_math/</span><br><span class="line">  01_implement_rsa_roundtrip.py</span><br><span class="line">  02_solve_project_euler_182.py</span><br></pre></td></tr></table></figure>
+
+<p>实验四：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">work/experiment_04_rsa_challenge/</span><br><span class="line">  01_parse_frame_files.py</span><br><span class="line">  02_analyze_vulnerable_relations.py</span><br><span class="line">  03_run_rsa_attacks.py</span><br></pre></td></tr></table></figure>
+
+<p>这种结构有几个好处：</p>
+<ol>
+<li>文件名能直接看出做什么。</li>
+<li>每个子问题能单独运行。</li>
+<li>截图时不会一张图塞太多内容。</li>
+<li>报告过程更清楚。</li>
+</ol>
+<h2 id="3-每个子问题保存运行日志"><a href="#3-每个子问题保存运行日志" class="headerlink" title="3. 每个子问题保存运行日志"></a>3. 每个子问题保存运行日志</h2><p>运行脚本会把每个子问题输出到单独日志。</p>
+<p>例如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">work/runs/experiment_01/06_break_repeating_key_xor.log</span><br><span class="line">work/runs/experiment_02/04_recover_mtc3_epassport_message.log</span><br><span class="line">work/runs/experiment_04/03_run_rsa_attacks.log</span><br></pre></td></tr></table></figure>
+
+<p>运行日志里不只写答案，还写：</p>
+<ol>
+<li>数据来源</li>
+<li>输入长度</li>
+<li>关键中间值</li>
+<li>使用的方法</li>
+<li>最终结果</li>
+<li>校验结果</li>
+</ol>
+<p>例如重复密钥 XOR 的日志会显示：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Decoded ciphertext length: 2876 bytes</span><br><span class="line">Hamming distance self-check: 37</span><br><span class="line">Top keysize candidates:</span><br><span class="line">Recovered key: Terminator X: Bring the noise</span><br></pre></td></tr></table></figure>
+
+<p>运行截图：</p>
+<p><img src="/images/crypto-experiments/detailed/exp01_06_repeating_key_run.png" alt="重复密钥 XOR 运行截图"></p>
+<h2 id="4-写自动测试"><a href="#4-写自动测试" class="headerlink" title="4. 写自动测试"></a>4. 写自动测试</h2><p>实验代码还写了 <code>unittest</code>，用平台样例验证关键函数。</p>
+<p>测试包括：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">hex to base64</span><br><span class="line">fixed XOR</span><br><span class="line">single-byte XOR</span><br><span class="line">Hamming distance</span><br><span class="line">AES-CBC</span><br><span class="line">ePassport MRZ 和明文</span><br><span class="line">Project Euler 182</span><br><span class="line">RSA Frame 解析和恢复</span><br></pre></td></tr></table></figure>
+
+<p>测试截图：</p>
+<p><img src="/images/crypto-experiments/detailed/all_tests_after_refactor.png" alt="全量测试截图"></p>
+<p>这一步的作用是防止改报告或拆文件时把原来能跑的算法改坏。</p>
+<h2 id="5-截图要截真实-VSCode"><a href="#5-截图要截真实-VSCode" class="headerlink" title="5. 截图要截真实 VSCode"></a>5. 截图要截真实 VSCode</h2><p>截图不是手写终端，也不是自己做一张图。我的做法是：</p>
+<ol>
+<li>打开 VSCode 到实验目录。</li>
+<li>最大化窗口。</li>
+<li>打开具体子脚本或运行日志。</li>
+<li>用截图脚本抓取真实屏幕。</li>
+</ol>
+<p>截图保存在：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">work/screenshots/detailed/</span><br></pre></td></tr></table></figure>
+
+<p>例如 RSA 关系分析截图：</p>
+<p><img src="/images/crypto-experiments/detailed/exp04_02_relations_run.png" alt="RSA 关系分析截图"></p>
+<h2 id="6-报告写作怎么组织"><a href="#6-报告写作怎么组织" class="headerlink" title="6. 报告写作怎么组织"></a>6. 报告写作怎么组织</h2><p>实验报告不应该只写“运行成功”。至少应该包含：</p>
+<ol>
+<li>实验题目</li>
+<li>数据来源</li>
+<li>题目理解</li>
+<li>原理说明</li>
+<li>实现步骤</li>
+<li>关键代码</li>
+<li>运行截图</li>
+<li>结果分析</li>
+<li>遇到的问题</li>
+<li>参考文献</li>
+</ol>
+<p>其中最重要的是数据来源和运行截图。没有来源的数据很难证明实验真实性。</p>
+<h2 id="7-不确定的结果不要猜"><a href="#7-不确定的结果不要猜" class="headerlink" title="7. 不确定的结果不要猜"></a>7. 不确定的结果不要猜</h2><p>RSA 破译实验里，有些 Frame 可以通过公共模数、共享素因子或广播攻击恢复，有些不能。</p>
+<p>不能恢复的部分就写“未恢复”，不要为了让句子完整而猜明文。</p>
+<p>这比写一个看似完整但无法证明的答案更可靠。</p>
+<h2 id="8-小结"><a href="#8-小结" class="headerlink" title="8. 小结"></a>8. 小结</h2><p>我认为一次可信的密码学实验至少要做到：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">题面可追溯</span><br><span class="line">代码可运行</span><br><span class="line">日志可复查</span><br><span class="line">截图真实</span><br><span class="line">报告和代码一致</span><br><span class="line">不猜测未验证结果</span><br></pre></td></tr></table></figure>
+
+<p>这套流程看起来麻烦，但写报告时会轻松很多，因为每个结论都能找到证据。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li>Cryptopals Crypto Challenges</li>
+<li>MysteryTwister C3</li>
+<li>Project Euler</li>
+<li>RSA 加密体制破译题目附件</li>
+</ul>
 
     </div>
     

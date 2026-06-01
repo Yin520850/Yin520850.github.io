@@ -178,21 +178,21 @@
             
             <span class="tag">
                 
-                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #ffa2c4">
+                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #00a596">
                     密码学
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/AES/" style="color: #00a596">
+                <a href="/tags/AES/" style="color: #ff7d73">
                     AES
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/CBC/" style="color: #03a9f4">
+                <a href="/tags/CBC/" style="color: #00a596">
                     CBC
                 </a>
             </span>
@@ -202,42 +202,81 @@
     </div>
     
     <div class="content" v-pre>
-        <h1 id="AES-CBC-模式与-PKCS-7-填充实践"><a href="#AES-CBC-模式与-PKCS-7-填充实践" class="headerlink" title="AES-CBC 模式与 PKCS#7 填充实践"></a>AES-CBC 模式与 PKCS#7 填充实践</h1><p>块密码一次只能处理固定长度的块。AES 的块长是 16 字节，因此真实消息需要填充，多个块还需要工作模式组织。Cryptopals Set 2 用很直接的方式让我们把这些部件手写出来。</p>
-<p><img src="/images/crypto-experiments/detailed/exp02_02_cbc_run.png" alt="实验二运行结果"></p>
-<h2 id="PKCS-7-填充"><a href="#PKCS-7-填充" class="headerlink" title="PKCS#7 填充"></a>PKCS#7 填充</h2><p>题目样例是把：</p>
+        <h1 id="AES-CBC-模式与-PKCS-7-填充实践"><a href="#AES-CBC-模式与-PKCS-7-填充实践" class="headerlink" title="AES-CBC 模式与 PKCS#7 填充实践"></a>AES-CBC 模式与 PKCS#7 填充实践</h1><p>这篇文章记录 Cryptopals Set 2 中几个 AES 分组密码相关实验。重点是把 CBC 的链式结构、PKCS#7 填充和 ECB&#x2F;CBC 检测讲清楚。</p>
+<p>本实验没有直接用库函数调用 CBC 模式，而是自己实现 CBC 的 XOR 链接过程。这样更容易理解 CBC 为什么能工作，以及它为什么会有 bit flipping 这类问题。</p>
+<h2 id="1-分组密码为什么需要填充"><a href="#1-分组密码为什么需要填充" class="headerlink" title="1. 分组密码为什么需要填充"></a>1. 分组密码为什么需要填充</h2><p>AES 的 block size 是 16 字节。也就是说，AES 单次只能处理 16 字节的数据块。</p>
+<p>如果明文长度不是 16 的倍数，就需要填充。Cryptopals 第 9 题要求实现 PKCS#7 padding。</p>
+<p>题目样例：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">YELLOW SUBMARINE</span><br></pre></td></tr></table></figure>
 
-<p>填充到 20 字节：</p>
+<p>填充到 20 字节后：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">YELLOW SUBMARINE\x04\x04\x04\x04</span><br></pre></td></tr></table></figure>
 
-<p>规则是缺几个字节就补几个值为缺口长度的字节。如果明文刚好是块长整数倍，也要补一个完整块。</p>
-<h2 id="CBC-的链式结构"><a href="#CBC-的链式结构" class="headerlink" title="CBC 的链式结构"></a>CBC 的链式结构</h2><p>CBC 解密公式为：</p>
+<p>因为原文长度是 16，目标长度是 20，所以补 4 个字节，每个字节值都是 <code>0x04</code>。</p>
+<p>代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">pkcs7_pad</span>(<span class="params">data: <span class="built_in">bytes</span>, block_size: <span class="built_in">int</span></span>) -&gt; <span class="built_in">bytes</span>:</span><br><span class="line">    pad_len = block_size - (<span class="built_in">len</span>(data) % block_size)</span><br><span class="line">    <span class="keyword">return</span> data + <span class="built_in">bytes</span>([pad_len]) * pad_len</span><br></pre></td></tr></table></figure>
+
+<p>去填充时要检查最后几个字节是否都等于 padding 长度：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">pkcs7_unpad</span>(<span class="params">data: <span class="built_in">bytes</span>, block_size: <span class="built_in">int</span> = <span class="number">16</span></span>) -&gt; <span class="built_in">bytes</span>:</span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> data <span class="keyword">or</span> <span class="built_in">len</span>(data) % block_size:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;invalid PKCS#7 length&quot;</span>)</span><br><span class="line">    pad_len = data[-<span class="number">1</span>]</span><br><span class="line">    <span class="keyword">if</span> pad_len &lt; <span class="number">1</span> <span class="keyword">or</span> pad_len &gt; block_size:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;invalid PKCS#7 padding&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> data[-pad_len:] != <span class="built_in">bytes</span>([pad_len]) * pad_len:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;invalid PKCS#7 padding&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> data[:-pad_len]</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-CBC-模式原理"><a href="#2-CBC-模式原理" class="headerlink" title="2. CBC 模式原理"></a>2. CBC 模式原理</h2><p>CBC 的全称是 Cipher Block Chaining。它和 ECB 最大的区别是：每个明文块在加密前都要和前一个密文块 XOR。</p>
+<p>加密公式：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">C_i = AES_ENC(P_i xor C_&#123;i-1&#125;, K)</span><br></pre></td></tr></table></figure>
+
+<p>解密公式：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">P_i = AES_DEC(C_i, K) xor C_&#123;i-1&#125;</span><br></pre></td></tr></table></figure>
 
-<p>第一块没有前一块密文，所以使用 IV。Cryptopals 第 10 题指定：</p>
+<p>第一块没有前一个密文块，所以用 IV：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">C_0 = IV</span><br></pre></td></tr></table></figure>
+
+<p>Cryptopals 第 10 题给出的参数是：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">key = YELLOW SUBMARINE</span><br><span class="line">IV  = 16 bytes of zero</span><br></pre></td></tr></table></figure>
 
-<p>用真实 challenge-data 解密后，明文开头为：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">I&#x27;m back and I&#x27;m ringin&#x27; the bell</span><br></pre></td></tr></table></figure>
+<p>真实输入文件：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https://cryptopals.com/static/challenge-data/10.txt</span><br></pre></td></tr></table></figure>
 
-<h2 id="为什么要自己实现-CBC"><a href="#为什么要自己实现-CBC" class="headerlink" title="为什么要自己实现 CBC"></a>为什么要自己实现 CBC</h2><p>实验中没有直接调用库的 CBC 模式，而是自己实现 ECB block 和 XOR 链接。这样可以清楚看到 CBC 的两个性质：</p>
-<ul>
-<li>同样的明文块在不同位置通常不会产生同样的密文块。</li>
-<li>修改某一块密文会影响当前块解密，并在下一块产生可控 bit flip。</li>
-</ul>
-<p>第二点正是 CBC bit flipping attack 的基础。</p>
-<h2 id="代码截图"><a href="#代码截图" class="headerlink" title="代码截图"></a>代码截图</h2><p><img src="/images/crypto-experiments/detailed/exp02_02_cbc_code.png" alt="AES CBC 代码截图"></p>
-<h2 id="实验建议"><a href="#实验建议" class="headerlink" title="实验建议"></a>实验建议</h2><p>写这类实验时，最好按以下顺序验证：</p>
+<h2 id="3-CBC-解密代码"><a href="#3-CBC-解密代码" class="headerlink" title="3. CBC 解密代码"></a>3. CBC 解密代码</h2><p>核心代码如下：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">xor_bytes</span>(<span class="params">left: <span class="built_in">bytes</span>, right: <span class="built_in">bytes</span></span>) -&gt; <span class="built_in">bytes</span>:</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">bytes</span>(a ^ b <span class="keyword">for</span> a, b <span class="keyword">in</span> <span class="built_in">zip</span>(left, right))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">aes_cbc_decrypt</span>(<span class="params">data: <span class="built_in">bytes</span>, key: <span class="built_in">bytes</span>, iv: <span class="built_in">bytes</span></span>) -&gt; <span class="built_in">bytes</span>:</span><br><span class="line">    prev = iv</span><br><span class="line">    out = []</span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, <span class="built_in">len</span>(data), <span class="number">16</span>):</span><br><span class="line">        block = data[i:i + <span class="number">16</span>]</span><br><span class="line">        decrypted = aes_decrypt_block(block, key)</span><br><span class="line">        plaintext_block = xor_bytes(decrypted, prev)</span><br><span class="line">        out.append(plaintext_block)</span><br><span class="line">        prev = block</span><br><span class="line">    <span class="keyword">return</span> <span class="string">b&quot;&quot;</span>.join(out)</span><br></pre></td></tr></table></figure>
+
+<p>这里有一个细节：解密当前块之后，要和前一个密文块 XOR。然后把 <code>prev</code> 更新为当前密文块。</p>
+<h2 id="4-真实运行结果"><a href="#4-真实运行结果" class="headerlink" title="4. 真实运行结果"></a>4. 真实运行结果</h2><p>运行脚本：</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python work\experiment_02_aes_modes\<span class="number">02</span>_decrypt_aes_cbc_mode.py</span><br></pre></td></tr></table></figure>
+
+<p>真实运行截图：</p>
+<p><img src="/images/crypto-experiments/detailed/exp02_02_cbc_run.png" alt="AES-CBC 解密运行截图"></p>
+<p>明文开头可以看到：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">I&#x27;m back and I&#x27;m ringin&#x27; the bell</span><br><span class="line">A rockin&#x27; on the mike while the fly girls yell</span><br></pre></td></tr></table></figure>
+
+<p>这说明 CBC 解密逻辑和平台数据匹配。</p>
+<h2 id="5-ECB-CBC-检测"><a href="#5-ECB-CBC-检测" class="headerlink" title="5. ECB&#x2F;CBC 检测"></a>5. ECB&#x2F;CBC 检测</h2><p>Cryptopals 第 11 题要求写一个 oracle，它随机选择 ECB 或 CBC 加密，然后我们根据密文判断模式。</p>
+<p>判断方法很简单：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">detect_ecb</span>(<span class="params">ciphertext: <span class="built_in">bytes</span>, block_size: <span class="built_in">int</span> = <span class="number">16</span></span>) -&gt; <span class="built_in">bool</span>:</span><br><span class="line">    blocks = [ciphertext[i:i + block_size] <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, <span class="built_in">len</span>(ciphertext), block_size)]</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">len</span>(blocks) != <span class="built_in">len</span>(<span class="built_in">set</span>(blocks))</span><br></pre></td></tr></table></figure>
+
+<p>如果输入里有很多重复块，比如：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA</span><br></pre></td></tr></table></figure>
+
+<p>ECB 会把相同明文块加密成相同密文块，所以密文中会出现重复块。CBC 因为每一块会和前一块密文 XOR，所以一般不会出现这种重复。</p>
+<h2 id="6-代码截图"><a href="#6-代码截图" class="headerlink" title="6. 代码截图"></a>6. 代码截图</h2><p><img src="/images/crypto-experiments/detailed/exp02_02_cbc_code.png" alt="AES-CBC 代码截图"></p>
+<h2 id="7-常见问题"><a href="#7-常见问题" class="headerlink" title="7. 常见问题"></a>7. 常见问题</h2><h3 id="7-1-把-IV-当成-key"><a href="#7-1-把-IV-当成-key" class="headerlink" title="7.1 把 IV 当成 key"></a>7.1 把 IV 当成 key</h3><p>IV 和 key 不是同一个东西。key 是保密的，IV 通常可以公开，但 CBC 的第一块解密需要 IV。</p>
+<h3 id="7-2-解密时-XOR-顺序写错"><a href="#7-2-解密时-XOR-顺序写错" class="headerlink" title="7.2 解密时 XOR 顺序写错"></a>7.2 解密时 XOR 顺序写错</h3><p>CBC 解密是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AES_DEC(C_i) xor C_&#123;i-1&#125;</span><br></pre></td></tr></table></figure>
+
+<p>不是先 XOR 再 AES 解密。</p>
+<h3 id="7-3-padding-没校验"><a href="#7-3-padding-没校验" class="headerlink" title="7.3 padding 没校验"></a>7.3 padding 没校验</h3><p>去 padding 时不能只看最后一个字节，还要检查最后 <code>pad_len</code> 个字节是否完全一致。</p>
+<h2 id="8-小结"><a href="#8-小结" class="headerlink" title="8. 小结"></a>8. 小结</h2><p>PKCS#7 和 CBC 都是分组密码里很基础但很容易写错的部分。</p>
+<p>复现时建议按这个顺序做：</p>
 <ol>
-<li>先验证 PKCS#7 样例。</li>
-<li>再用 AES 单块测试确认 ECB 基元。</li>
-<li>再解 Cryptopals 的 CBC 数据文件。</li>
-<li>最后实现 oracle 或攻击类题目。</li>
+<li>先写 padding。</li>
+<li>再写单块 AES。</li>
+<li>再写 CBC 链接。</li>
+<li>最后用平台真实文件解密验证。</li>
 </ol>
-<p>这样每一层都有证据，不会在最后才发现底层字节序或 padding 错了。</p>
+<p>这样每一层都有证据，调试也更容易。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
-<li>Cryptopals Set 2 Challenge 9-16</li>
-<li>NIST SP 800-38A: Recommendation for Block Cipher Modes of Operation</li>
+<li>Cryptopals Set 2 Challenge 9</li>
+<li>Cryptopals Set 2 Challenge 10</li>
+<li>Cryptopals Set 2 Challenge 11</li>
+<li>NIST SP 800-38A</li>
 </ul>
 
     </div>
