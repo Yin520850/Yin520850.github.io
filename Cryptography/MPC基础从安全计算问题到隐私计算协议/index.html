@@ -191,21 +191,21 @@
             
             <span class="tag">
                 
-                <a href="/tags/MPC/" style="color: #ff7d73">
+                <a href="/tags/MPC/" style="color: #00bcd4">
                     MPC
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/%E9%9A%90%E7%A7%81%E8%AE%A1%E7%AE%97/" style="color: #03a9f4">
+                <a href="/tags/%E9%9A%90%E7%A7%81%E8%AE%A1%E7%AE%97/" style="color: #00a596">
                     隐私计算
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/%E5%AE%89%E5%85%A8%E5%A4%9A%E6%96%B9%E8%AE%A1%E7%AE%97/" style="color: #00bcd4">
+                <a href="/tags/%E5%AE%89%E5%85%A8%E5%A4%9A%E6%96%B9%E8%AE%A1%E7%AE%97/" style="color: #ffa2c4">
                     安全多方计算
                 </a>
             </span>
@@ -220,21 +220,70 @@
 <blockquote>
 <p>多个参与方各自持有私有输入，大家共同计算一个函数，只泄露约定好的输出，不泄露各自输入的额外信息。</p>
 </blockquote>
-<p>如果传统密码学主要解决“通信和存储时怎么保护数据”，MPC 关心的是“计算过程中怎么保护数据”。这也是它能进入隐私计算、联合风控、隐私广告、医疗协作、金融联合建模等场景的原因。</p>
-<h2 id="1-从姚氏百万富翁问题开始"><a href="#1-从姚氏百万富翁问题开始" class="headerlink" title="1. 从姚氏百万富翁问题开始"></a>1. 从姚氏百万富翁问题开始</h2><p>姚氏百万富翁问题是 MPC 最经典的入口：</p>
-<blockquote>
-<p>Alice 和 Bob 都是百万富翁，他们想知道谁更有钱，但谁也不想告诉对方自己的具体财富。</p>
-</blockquote>
-<p>形式化一点：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Alice 输入 x</span><br><span class="line">Bob 输入 y</span><br><span class="line">双方共同计算 f(x, y) = x &gt; y</span><br><span class="line">输出谁更大</span><br><span class="line">不泄露 x 和 y 的具体值</span><br></pre></td></tr></table></figure>
-
-<p>这个问题看似简单，但它把 MPC 的核心说清楚了：</p>
+<p>我更愿意从真实协作场景理解 MPC。</p>
+<p>假设几家机构想一起做一件事：</p>
 <ol>
-<li>输入是私有的。</li>
-<li>函数是公开或约定的。</li>
-<li>输出是有限的。</li>
-<li>协议过程不应该泄露额外信息。</li>
+<li>银行想联合识别欺诈风险，但不能把完整客户数据交出去。</li>
+<li>医院想联合统计病例特征，但不能泄露患者隐私。</li>
+<li>平台想做广告转化分析，但广告方和平台都不想暴露完整用户列表。</li>
+<li>多个安全团队想聚合威胁情报，但不想公开自己的全部样本库。</li>
+<li>几家公司想联合训练模型，但原始数据不能离开本机构。</li>
 </ol>
+<p>这些场景的共同矛盾是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">数据分散在不同参与方手里</span><br><span class="line">直接共享数据有合规和商业风险</span><br><span class="line">完全不共享又无法完成联合计算</span><br></pre></td></tr></table></figure>
+
+<p>MPC 试图解决的就是这个矛盾。它不是只保护“传输中的数据”或“磁盘上的数据”，而是进一步保护“计算中的数据”。</p>
+<h2 id="1-从明文协作到安全计算"><a href="#1-从明文协作到安全计算" class="headerlink" title="1. 从明文协作到安全计算"></a>1. 从明文协作到安全计算</h2><p>先看一个普通明文协作流程。</p>
+<p>Alice 有一份数据 <code>x</code>，Bob 有一份数据 <code>y</code>，他们想计算一个函数：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Alice 输入 x</span><br><span class="line">Bob 输入 y</span><br><span class="line">计算 f(x, y)</span><br></pre></td></tr></table></figure>
+
+<p>最直接的做法是：</p>
+<ol>
+<li>Alice 把 <code>x</code> 发给 Bob，Bob 本地计算。</li>
+<li>Bob 把 <code>y</code> 发给 Alice，Alice 本地计算。</li>
+<li>双方把数据发给一个第三方，由第三方计算。</li>
+</ol>
+<p>这三种做法都不理想。前两种会让一方直接拿到另一方的原始数据，第三种把信任压力转移给了中心节点。</p>
+<p>MPC 的目标是把这个流程改成：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Alice 不交出 x</span><br><span class="line">Bob 不交出 y</span><br><span class="line">双方通过协议共同得到 f(x, y)</span><br><span class="line">协议过程中不泄露超过输出本身的信息</span><br></pre></td></tr></table></figure>
+
+<p>也就是说，MPC 要模拟一个“可信计算员”，但现实里又不真正引入这个可信计算员。</p>
+<p>这个思想可以覆盖很多函数：</p>
+<table>
+<thead>
+<tr>
+<th>函数类型</th>
+<th>例子</th>
+<th>输出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>比较</td>
+<td><code>f(x, y) = x &gt; y</code></td>
+<td>谁更大</td>
+</tr>
+<tr>
+<td>求交</td>
+<td><code>f(X, Y) = X ∩ Y</code></td>
+<td>共同元素</td>
+</tr>
+<tr>
+<td>聚合</td>
+<td><code>f(x, y) = sum(x, y)</code></td>
+<td>总和、均值、计数</td>
+</tr>
+<tr>
+<td>联合建模</td>
+<td><code>f(D1, D2) = model</code></td>
+<td>模型参数或预测结果</td>
+</tr>
+<tr>
+<td>风控规则</td>
+<td>多方特征共同判断</td>
+<td>命中结果或风险分</td>
+</tr>
+</tbody></table>
+<p>姚氏百万富翁问题就是第一类比较函数的经典例子：两个百万富翁想知道谁更有钱，但都不想暴露自己的具体财富。它适合作为 MPC 的历史入口，但真实工程里的 MPC 更常见于数据协作、统计分析和隐私计算系统。</p>
 <p>PSI 也是这个框架下的一个函数：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Alice 输入集合 X</span><br><span class="line">Bob 输入集合 Y</span><br><span class="line">双方计算 f(X, Y) = X ∩ Y</span><br></pre></td></tr></table></figure>
 
