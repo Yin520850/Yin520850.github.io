@@ -1,0 +1,578 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>PSI 基础：从百万富翁问题到现代隐私集合求交 | Yin&#39;s Blog</title>
+    <meta name="author" content="Yin" />
+    <meta name="description" content="一个热爱技术的开发者的个人博客，分享编程心得和生活感悟" />
+    <meta name="keywords" content="hexo,blog,技术博客,编程,开发" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+    />
+    <link rel="icon" href="/images/avatar.jpg" />
+    <link rel="preconnect" href="https://s4.zstatic.net" />
+<script src="https://s4.zstatic.net/ajax/libs/vue/3.3.7/vue.global.prod.min.js"></script>
+<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.cn" />
+<link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin />
+<link
+    rel="stylesheet"
+    href="https://fonts.googleapis.cn/css2?family=Fira+Code:wght@400;500;600;700&family=Lexend:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;600;700;800;900&display=swap"
+/>
+<script> const mixins = {}; </script>
+
+<script src="https://polyfill.alicdn.com/v3/polyfill.min.js?features=default"></script>
+
+
+
+
+<script src="/js/lib/preview.js"></script>
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css" />
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+    <div id="layout">
+        <transition name="fade">
+            <div id="loading" v-show="loading">
+                <div id="loading-circle">
+                    <h2>LOADING</h2>
+                    <p>加载过慢请开启缓存 浏览器默认开启</p>
+                    <img src="/images/loading.gif" />
+                </div>
+            </div>
+        </transition>
+        <div id="menu" :class="{ hidden: hiddenMenu, 'menu-color': menuColor}">
+    <nav id="desktop-menu">
+        <a class="title" href="/">
+            <span>YIN&#39;S BLOG</span>
+        </a>
+        
+        <a href="/">
+            <i class="fa-solid fa-house fa-fw"></i>
+            <span>&ensp;Home</span>
+        </a>
+        
+        <a href="/topics">
+            <i class="fa-solid fa-layer-group fa-fw"></i>
+            <span>&ensp;Topics</span>
+        </a>
+        
+        <a href="/about">
+            <i class="fa-solid fa-id-card fa-fw"></i>
+            <span>&ensp;About</span>
+        </a>
+        
+        <a href="/archives">
+            <i class="fa-solid fa-box-archive fa-fw"></i>
+            <span>&ensp;Archives</span>
+        </a>
+        
+        <a href="/categories">
+            <i class="fa-solid fa-bookmark fa-fw"></i>
+            <span>&ensp;Categories</span>
+        </a>
+        
+        <a href="/tags">
+            <i class="fa-solid fa-tags fa-fw"></i>
+            <span>&ensp;Tags</span>
+        </a>
+        
+    </nav>
+    <nav id="mobile-menu">
+        <div class="title" @click="showMenuItems = !showMenuItems">
+            <i class="fa-solid fa-bars fa-fw"></i>
+            <span>&emsp;YIN&#39;S BLOG</span>
+        </div>
+        <transition name="slide">
+            <div class="items" v-show="showMenuItems">
+                
+                <a href="/">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-house fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Home</div>
+                    </div>
+                </a>
+                
+                <a href="/topics">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-layer-group fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Topics</div>
+                    </div>
+                </a>
+                
+                <a href="/about">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-id-card fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">About</div>
+                    </div>
+                </a>
+                
+                <a href="/archives">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-box-archive fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Archives</div>
+                    </div>
+                </a>
+                
+                <a href="/categories">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-bookmark fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Categories</div>
+                    </div>
+                </a>
+                
+                <a href="/tags">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-tags fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Tags</div>
+                    </div>
+                </a>
+                
+            </div>
+        </transition>
+    </nav>
+</div>
+<transition name="fade">
+    <div id="menu-curtain" @click="showMenuItems = !showMenuItems" v-show="showMenuItems"></div>
+</transition>
+
+        <div id="main" :class="loading ? 'into-enter-from': 'into-enter-active'">
+            <div class="article">
+    <div>
+        <h1>PSI 基础：从百万富翁问题到现代隐私集合求交</h1>
+    </div>
+    <div class="info">
+        
+        <span class="category">
+            <a href="/categories/Cryptography/">
+                <span class="icon">
+                    <i class="fa-solid fa-bookmark fa-fw"></i>
+                </span>
+                Cryptography
+            </a>
+        </span>
+        
+        
+        <span class="tags">
+            <span class="icon">
+                <i class="fa-solid fa-tags fa-fw"></i>
+            </span>
+            
+            
+            <span class="tag">
+                
+                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #ff7d73">
+                    密码学
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/PSI/" style="color: #00a596">
+                    PSI
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/MPC/" style="color: #00bcd4">
+                    MPC
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/%E9%9A%90%E7%A7%81%E8%AE%A1%E7%AE%97/" style="color: #ff7d73">
+                    隐私计算
+                </a>
+            </span>
+            
+        </span>
+        
+    </div>
+    
+    <div class="content" v-pre>
+        <h1 id="PSI-基础：从百万富翁问题到现代隐私集合求交"><a href="#PSI-基础：从百万富翁问题到现代隐私集合求交" class="headerlink" title="PSI 基础：从百万富翁问题到现代隐私集合求交"></a>PSI 基础：从百万富翁问题到现代隐私集合求交</h1><p>PSI，全称是 Private Set Intersection，中文一般叫私有集合求交。</p>
+<p>它解决的问题很直接：两个参与方各自有一批数据，双方想知道哪些元素是共同的，但不想把非交集部分暴露给对方。</p>
+<p>举几个现实场景：</p>
+<ol>
+<li>两家公司想找共同客户，但不想把完整客户名单交出去。</li>
+<li>安全厂商想和另一方比对恶意 IP、域名、哈希，但不想暴露自己的完整情报库。</li>
+<li>平台想做广告转化归因，广告方有曝光用户，平台有购买用户，双方只想知道交集或交集规模。</li>
+<li>医疗或基因场景中，机构想寻找共同病例或匹配样本，但不希望泄露所有患者信息。</li>
+<li>通讯录发现好友时，服务端希望知道用户通讯录中哪些人已经注册，但不应该拿到整份通讯录明文。</li>
+</ol>
+<p>如果只把数据做一次普通哈希再交给对方，看起来好像可以隐藏原始数据，但很多实际标识符空间很小，比如手机号、邮箱、身份证号、IP、车牌号。攻击者可以提前建立字典，把哈希反查回来。所以 PSI 的意义不是“把集合哈希一下”，而是在协议层面限制双方能学到的信息。</p>
+<h2 id="1-从姚氏百万富翁问题说起"><a href="#1-从姚氏百万富翁问题说起" class="headerlink" title="1. 从姚氏百万富翁问题说起"></a>1. 从姚氏百万富翁问题说起</h2><p>安全多方计算里最经典的引子是姚氏百万富翁问题：</p>
+<blockquote>
+<p>两个百万富翁想知道谁更有钱，但都不想暴露自己的真实财富。</p>
+</blockquote>
+<p>这个问题表面上是在比较两个数字，背后真正表达的是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Alice 有私有输入 x</span><br><span class="line">Bob 有私有输入 y</span><br><span class="line">双方共同计算 f(x, y)</span><br><span class="line">除了 f(x, y) 的结果，不泄露 x 和 y 的额外信息</span><br></pre></td></tr></table></figure>
+
+<p>百万富翁问题里的函数是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">f(x, y) = x &gt; y ?</span><br></pre></td></tr></table></figure>
+
+<p>PSI 里的函数则是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">f(X, Y) = X ∩ Y</span><br></pre></td></tr></table></figure>
+
+<p>或者只输出交集大小：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">f(X, Y) = |X ∩ Y|</span><br></pre></td></tr></table></figure>
+
+<p>这就是 PSI 和 MPC 的关系：PSI 是一个非常典型、非常实用的安全多方计算任务。MPC 研究“怎么在不泄露输入的情况下共同计算函数”，PSI 研究的是其中一个特殊函数：集合求交。</p>
+<h2 id="2-PSI-到底要保护什么"><a href="#2-PSI-到底要保护什么" class="headerlink" title="2. PSI 到底要保护什么"></a>2. PSI 到底要保护什么</h2><p>设 Alice 的集合是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">X = &#123;x1, x2, x3, ...&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Bob 的集合是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Y = &#123;y1, y2, y3, ...&#125;</span><br></pre></td></tr></table></figure>
+
+<p>一个理想 PSI 协议希望做到：</p>
+<ol>
+<li>Alice 最多知道交集中的元素。</li>
+<li>Bob 最多知道交集中的元素。</li>
+<li>Alice 不知道 Bob 的非交集元素。</li>
+<li>Bob 不知道 Alice 的非交集元素。</li>
+<li>协议不能让任意一方通过构造恶意输入大量套取对方集合。</li>
+</ol>
+<p>第 5 点在真实系统中尤其重要。比如一个恶意客户端可以拿手机号全集当作自己的输入集合，那么交集就会变成服务端集合本身。严格来说，这不是密码协议本身能完全解决的，还需要输入规模限制、频率限制、认证、审计、差分隐私、业务侧反滥用策略一起配合。</p>
+<h2 id="3-先看一个不安全的“哈希求交”"><a href="#3-先看一个不安全的“哈希求交”" class="headerlink" title="3. 先看一个不安全的“哈希求交”"></a>3. 先看一个不安全的“哈希求交”</h2><p>最朴素的做法是：</p>
+<ol>
+<li>Alice 把每个元素做 <code>H(x)</code> 发给 Bob。</li>
+<li>Bob 把每个元素做 <code>H(y)</code>。</li>
+<li>Bob 比较哈希值，得到交集。</li>
+</ol>
+<p>这个方案有两个问题：</p>
+<ol>
+<li>如果元素空间可枚举，Bob 可以离线暴力枚举 Alice 的元素。</li>
+<li>如果双方直接交换哈希集合，双方可能拿到比交集更多的信息。</li>
+</ol>
+<p>所以现代 PSI 往往需要引入公钥密码、OPRF、OT、同态加密、布谷鸟哈希、秘密分享等技术，让“比较相等”这件事可以在隐藏输入的状态下完成。</p>
+<p>下面用三个基于 RSA 或公钥思想的方案建立直觉。它们不是生产系统的最终形态，但很适合入门。</p>
+<h2 id="4-方案一：基于-RSA-盲化签名的-PSI"><a href="#4-方案一：基于-RSA-盲化签名的-PSI" class="headerlink" title="4. 方案一：基于 RSA 盲化签名的 PSI"></a>4. 方案一：基于 RSA 盲化签名的 PSI</h2><p>这个方案的核心思想是：Bob 持有 RSA 私钥，Alice 想让 Bob 给自己的元素做一个“签名式映射”，但 Bob 不能看到 Alice 的元素。</p>
+<p>RSA 里有：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">公钥: (N, e)</span><br><span class="line">私钥: d</span><br><span class="line">签名: s = m^d mod N</span><br><span class="line">验证关系: s^e = m mod N</span><br></pre></td></tr></table></figure>
+
+<p>为了不让 Bob 看到 <code>m = H(x)</code>，Alice 使用盲化：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Alice 选择随机 r</span><br><span class="line">blinded = H(x) * r^e mod N</span><br></pre></td></tr></table></figure>
+
+<p>Bob 对盲化值做私钥运算：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">signed_blinded = blinded^d mod N</span><br></pre></td></tr></table></figure>
+
+<p>展开可以看到：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">signed_blinded</span><br><span class="line">= (H(x) * r^e)^d mod N</span><br><span class="line">= H(x)^d * r mod N</span><br></pre></td></tr></table></figure>
+
+<p>Alice 拿回来以后除掉 <code>r</code>：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">token_x = signed_blinded * r^-1 mod N</span><br><span class="line">        = H(x)^d mod N</span><br></pre></td></tr></table></figure>
+
+<p>这样 Alice 得到了自己元素对应的 token，但 Bob 没看到 Alice 的元素。</p>
+<p>Bob 对自己的集合也计算：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">token_y = H(y)^d mod N</span><br></pre></td></tr></table></figure>
+
+<p>最后双方比较 token：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">token_x == token_y  &lt;=&gt;  x == y</span><br></pre></td></tr></table></figure>
+
+<p>这个方案的直觉很强：</p>
+<ol>
+<li>RSA 私钥指数 <code>d</code> 像一个只有 Bob 掌握的“秘密函数”。</li>
+<li>Alice 通过盲化让 Bob 帮自己算这个函数。</li>
+<li>相同输入会得到相同 token，不同输入几乎不会撞上。</li>
+<li>Alice 只能比较 token，不能从 token 反推出 Bob 的非交集元素。</li>
+</ol>
+<p>但它也有明显缺点：</p>
+<ol>
+<li>RSA 指数运算很重，大集合时代价高。</li>
+<li>需要处理恶意输入、重复元素、集合大小泄露等问题。</li>
+<li>如果直接输出交集，还要考虑哪一方获得结果、是否只输出交集大小。</li>
+<li>RSA 方案不适合后量子安全要求。</li>
+</ol>
+<p>所以它适合理解 PSI 的基本形状，但不是当前大规模工程 PSI 的主流选择。</p>
+<h2 id="5-方案二：基于可交换加密的-DH-RSA-风格-PSI"><a href="#5-方案二：基于可交换加密的-DH-RSA-风格-PSI" class="headerlink" title="5. 方案二：基于可交换加密的 DH&#x2F;RSA 风格 PSI"></a>5. 方案二：基于可交换加密的 DH&#x2F;RSA 风格 PSI</h2><p>可交换加密的特点是：双方用各自密钥加密同一个消息时，加密顺序不影响最终结果。</p>
+<p>抽象地说：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">E_a(E_b(m)) = E_b(E_a(m))</span><br></pre></td></tr></table></figure>
+
+<p>如果用指数运算来理解，可以把元素哈希到群中：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">h = H(x)</span><br></pre></td></tr></table></figure>
+
+<p>Alice 用自己的秘密指数 <code>a</code> 处理：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">A_x = h^a</span><br></pre></td></tr></table></figure>
+
+<p>Bob 用自己的秘密指数 <code>b</code> 处理：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">B_y = H(y)^b</span><br></pre></td></tr></table></figure>
+
+<p>然后双方交换一次，再各自做第二层指数：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Bob 对 Alice 的值再处理: (H(x)^a)^b = H(x)^(ab)</span><br><span class="line">Alice 对 Bob 的值再处理: (H(y)^b)^a = H(y)^(ab)</span><br></pre></td></tr></table></figure>
+
+<p>最后双方比较：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">H(x)^(ab) == H(y)^(ab)  &lt;=&gt;  x == y</span><br></pre></td></tr></table></figure>
+
+<p>这个方案的美感在于：</p>
+<ol>
+<li>双方都没有单方面控制最终映射。</li>
+<li>加密顺序可以交换，所以相同元素最终会落到同一个值。</li>
+<li>不同元素在离散对数困难假设下难以反推原文。</li>
+</ol>
+<p>但是它仍然有工程问题：</p>
+<ol>
+<li>每个元素至少需要公钥群指数运算。</li>
+<li>大规模集合下计算和通信都很重。</li>
+<li>如果没有额外随机化、认证和证明，恶意参与方可能构造异常元素。</li>
+<li>输出阶段仍然要处理谁拿到交集、是否泄露集合大小、是否允许重复元素。</li>
+</ol>
+<p>这个思路经常被用来讲“为什么双方可以在不知道明文的情况下比较相等”。它和后面的 OPRF 思想很接近：把元素映射到一个只有协议双方合作才能得到的伪随机标签。</p>
+<h2 id="6-方案三：基于-RSA-Paillier-同态思想的多项式-PSI"><a href="#6-方案三：基于-RSA-Paillier-同态思想的多项式-PSI" class="headerlink" title="6. 方案三：基于 RSA&#x2F;Paillier 同态思想的多项式 PSI"></a>6. 方案三：基于 RSA&#x2F;Paillier 同态思想的多项式 PSI</h2><p>第三类方案更接近早期经典 PSI 论文里的思路：把集合编码成多项式，再用同态加密让对方在密文上计算。</p>
+<p>Alice 有集合：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">X = &#123;x1, x2, x3&#125;</span><br></pre></td></tr></table></figure>
+
+<p>她构造一个多项式：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">P(t) = (t - x1)(t - x2)(t - x3)</span><br></pre></td></tr></table></figure>
+
+<p>这个多项式有一个性质：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">如果 y 在 X 中，那么 P(y) = 0</span><br><span class="line">如果 y 不在 X 中，那么 P(y) != 0</span><br></pre></td></tr></table></figure>
+
+<p>Alice 不想把多项式系数明文给 Bob，于是把系数加密后发给 Bob。Bob 使用同态加密在密文上计算 <code>P(y)</code>，再加上随机掩码：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Enc(P(y)) -&gt; Enc(r * P(y) + y)</span><br></pre></td></tr></table></figure>
+
+<p>直觉是：</p>
+<ol>
+<li>如果 <code>y</code> 属于 Alice 的集合，那么 <code>P(y)=0</code>，解密后得到 <code>y</code>。</li>
+<li>如果 <code>y</code> 不属于 Alice 的集合，那么解密后得到一个被随机数扰乱的值。</li>
+<li>Alice 解密后只看哪些结果能落回合法元素，从而得到交集。</li>
+</ol>
+<p>严格实现会比这个直觉版本复杂得多，需要处理有限域、编码、随机掩码、恶意安全、重复元素、结果泄露等问题。</p>
+<p>这类方案的好处是表达力强，可以自然引出：</p>
+<ol>
+<li>同态加密为什么能在密文上计算。</li>
+<li>集合成员关系可以转化成多项式零点判断。</li>
+<li>PSI 不只是“加密后比较”，也可以是“把集合变成一个可计算函数”。</li>
+</ol>
+<p>缺点也很明显：</p>
+<ol>
+<li>同态计算和密文体积通常比较重。</li>
+<li>多项式阶数随集合规模增长，直接方案不适合超大集合。</li>
+<li>真实系统需要大量编码、分桶、批处理和参数优化。</li>
+</ol>
+<p>所以它更适合作为理解同态 PSI 的入口。</p>
+<h2 id="7-三个方案放在一起看"><a href="#7-三个方案放在一起看" class="headerlink" title="7. 三个方案放在一起看"></a>7. 三个方案放在一起看</h2><table>
+<thead>
+<tr>
+<th>方案</th>
+<th>核心技术</th>
+<th>直觉</th>
+<th>优点</th>
+<th>主要问题</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>RSA 盲化签名 PSI</td>
+<td>RSA 盲签名 &#x2F; OPRF 雏形</td>
+<td>Bob 帮 Alice 计算秘密映射，但看不到输入</td>
+<td>容易理解，协议形状清晰</td>
+<td>RSA 运算重，不适合大规模</td>
+</tr>
+<tr>
+<td>可交换加密 PSI</td>
+<td>DH&#x2F;RSA 风格指数运算</td>
+<td>双方各加密一层，顺序可交换</td>
+<td>相同元素最终标签一致</td>
+<td>公钥运算多，恶意安全复杂</td>
+</tr>
+<tr>
+<td>同态&#x2F;多项式 PSI</td>
+<td>同态加密 + 多项式零点</td>
+<td>集合成员判断变成 <code>P(y)=0</code></td>
+<td>表达力强，可扩展到更多功能</td>
+<td>密文计算和编码代价高</td>
+</tr>
+</tbody></table>
+<p>它们共同说明了 PSI 的核心闭环：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">把元素变成隐私保护标签</span><br><span class="line">让相同元素得到可匹配的标签</span><br><span class="line">让不同元素和非交集元素保持隐藏</span><br><span class="line">控制输出范围</span><br><span class="line">再把效率、安全模型和工程约束补齐</span><br></pre></td></tr></table></figure>
+
+<h2 id="8-为什么前沿-PSI-不停往-OPRF、OT、VOLE-走"><a href="#8-为什么前沿-PSI-不停往-OPRF、OT、VOLE-走" class="headerlink" title="8. 为什么前沿 PSI 不停往 OPRF、OT、VOLE 走"></a>8. 为什么前沿 PSI 不停往 OPRF、OT、VOLE 走</h2><p>现代 PSI 的目标不是“能不能做”，而是：</p>
+<ol>
+<li>千万级、亿级集合能不能跑。</li>
+<li>互联网带宽下能不能跑。</li>
+<li>移动端或浏览器端能不能跑。</li>
+<li>恶意参与方能不能防。</li>
+<li>只输出交集大小、带 payload、模糊匹配、多方求交能不能做。</li>
+<li>云上跑的时候计算成本和流量成本能不能接受。</li>
+</ol>
+<p>因此，很多高性能 PSI 都在减少昂贵的公钥运算，把大量工作转成对称密码、哈希、OT 扩展、VOLE 相关技术。</p>
+<h3 id="8-1-OPRF：把-PSI-看成“双方合作计算秘密标签”"><a href="#8-1-OPRF：把-PSI-看成“双方合作计算秘密标签”" class="headerlink" title="8.1 OPRF：把 PSI 看成“双方合作计算秘密标签”"></a>8.1 OPRF：把 PSI 看成“双方合作计算秘密标签”</h3><p>OPRF 是 Oblivious Pseudorandom Function，中文可以叫不经意伪随机函数。</p>
+<p>它的目标是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">客户端输入 x</span><br><span class="line">服务端持有密钥 k</span><br><span class="line">客户端得到 F_k(x)</span><br><span class="line">服务端不知道 x</span><br><span class="line">客户端不知道 k，也不能计算其他输入的 F_k</span><br></pre></td></tr></table></figure>
+
+<p>这和 PSI 很契合：</p>
+<ol>
+<li>双方把各自元素都映射成 <code>F_k(element)</code>。</li>
+<li>相同元素得到相同标签。</li>
+<li>非交集元素看起来像随机值。</li>
+<li>客户端不能绕过协议随意查询大量元素时，还需要额外限制和认证。</li>
+</ol>
+<p>Chase 和 Miao 在 CRYPTO 2020 的工作就围绕轻量级 OPRF 构造 Internet setting 下的 PSI，关注中等带宽网络里的计算和通信平衡。Microsoft Research 的介绍里也强调了这类协议在 30-100 Mbps 等网络条件下的效率优势。</p>
+<h3 id="8-2-OT-扩展：用少量公钥操作换大量对称操作"><a href="#8-2-OT-扩展：用少量公钥操作换大量对称操作" class="headerlink" title="8.2 OT 扩展：用少量公钥操作换大量对称操作"></a>8.2 OT 扩展：用少量公钥操作换大量对称操作</h3><p>OT 是 Oblivious Transfer，不经意传输。最常见的 1-out-of-2 OT 可以理解为：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Sender 有 m0, m1</span><br><span class="line">Receiver 选择 b</span><br><span class="line">Receiver 只得到 mb</span><br><span class="line">Sender 不知道 b</span><br><span class="line">Receiver 不知道另一个消息</span><br></pre></td></tr></table></figure>
+
+<p>很多 PSI 协议把“元素是否相等”的判断转成大量 OT 相关操作。直接做 OT 很贵，因为基础 OT 往往依赖公钥密码。OT 扩展的思想是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">先做少量基础 OT</span><br><span class="line">再用对称密码和矩阵扩展出大量 OT</span><br></pre></td></tr></table></figure>
+
+<p>这就是前沿 PSI 高效起来的关键之一。你之前写过 OTE，正好可以把它接到 PSI：PSI 不是孤立知识点，OTE 是很多高性能 PSI 协议背后的效率来源。</p>
+<h3 id="8-3-布谷鸟哈希：先把比较范围压小"><a href="#8-3-布谷鸟哈希：先把比较范围压小" class="headerlink" title="8.3 布谷鸟哈希：先把比较范围压小"></a>8.3 布谷鸟哈希：先把比较范围压小</h3><p>如果 Alice 和 Bob 都有很多元素，直接两两比较是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">O(n * m)</span><br></pre></td></tr></table></figure>
+
+<p>这完全不可接受。</p>
+<p>布谷鸟哈希和分桶技术的作用是：把元素放进桶里，让协议只在对应桶或少量候选位置上比较。这样可以把“全局两两比较”变成“局部候选比较”。</p>
+<p>高性能 PSI 里经常会看到：</p>
+<ol>
+<li>Cuckoo hashing</li>
+<li>simple hashing</li>
+<li>stash</li>
+<li>binning</li>
+<li>padding</li>
+</ol>
+<p>这些看起来像数据结构细节，但其实非常关键。它们决定了通信量、误判概率、桶溢出概率和实现复杂度。</p>
+<h3 id="8-4-VOLE-PCG：把相关随机性预处理出来"><a href="#8-4-VOLE-PCG：把相关随机性预处理出来" class="headerlink" title="8.4 VOLE &#x2F; PCG：把相关随机性预处理出来"></a>8.4 VOLE &#x2F; PCG：把相关随机性预处理出来</h3><p>更靠近当前研究前沿的一条线是 VOLE-based PSI。</p>
+<p>VOLE 可以粗略理解为一种能高效生成相关随机性的工具。很多现代 MPC&#x2F;PSI 协议把大量在线计算拆成：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">离线阶段：生成相关随机材料</span><br><span class="line">在线阶段：用这些材料快速完成真实输入上的计算</span><br></pre></td></tr></table></figure>
+
+<p>这样做的好处是：在线阶段更快、更适合真实业务交互。近几年的 volePSI、silent VOLE、PCG 等关键词，经常出现在高性能 PSI 和 MPC 系统里。</p>
+<h3 id="8-5-后量子-PSI：RSA-和-DH-不是终点"><a href="#8-5-后量子-PSI：RSA-和-DH-不是终点" class="headerlink" title="8.5 后量子 PSI：RSA 和 DH 不是终点"></a>8.5 后量子 PSI：RSA 和 DH 不是终点</h3><p>前面三个入门方案都依赖 RSA、离散对数或同态加密类假设。量子计算一旦能运行大规模 Shor 算法，RSA 和传统 DH 都会受到威胁。</p>
+<p>所以 PSI 的一个前沿方向是后量子安全：</p>
+<ol>
+<li>基于格的 PSI。</li>
+<li>基于 LPN&#x2F;LWE 假设的 OPRF 或 OT 扩展。</li>
+<li>避免传统 RSA&#x2F;DH 的协议设计。</li>
+<li>在安全性、通信量、实现复杂度之间重新权衡。</li>
+</ol>
+<p>后量子 PSI 现在还不是所有工程场景的默认选项，但如果系统有长期机密性要求，或者数据生命周期很长，就需要关注这一方向。</p>
+<h2 id="9-一个学习闭环：从问题到协议到工程"><a href="#9-一个学习闭环：从问题到协议到工程" class="headerlink" title="9. 一个学习闭环：从问题到协议到工程"></a>9. 一个学习闭环：从问题到协议到工程</h2><p>学 PSI 不建议一开始就啃最新论文，可以按这个闭环推进：</p>
+<ol>
+<li>先理解姚氏百万富翁问题：目标是“计算结果，不泄露输入”。</li>
+<li>再理解 PSI 功能：集合求交或交集大小。</li>
+<li>用 RSA 盲化签名理解“秘密标签”。</li>
+<li>用可交换加密理解“相同元素经过双方处理后仍能匹配”。</li>
+<li>用同态多项式理解“集合成员关系可以变成函数计算”。</li>
+<li>接着看 OPRF：现代 PSI 经常把元素变成 <code>F_k(x)</code>。</li>
+<li>再看 OT&#x2F;OTE：为什么高性能协议能把公钥操作摊薄。</li>
+<li>最后看布谷鸟哈希、VOLE、恶意安全、后量子和系统实现。</li>
+</ol>
+<p>这一条线走下来，PSI 就不再是一堆协议名字，而是一组不断解决瓶颈的设计选择。</p>
+<h2 id="10-入门练习"><a href="#10-入门练习" class="headerlink" title="10. 入门练习"></a>10. 入门练习</h2><h3 id="题-1：为什么普通哈希求交不安全"><a href="#题-1：为什么普通哈希求交不安全" class="headerlink" title="题 1：为什么普通哈希求交不安全"></a>题 1：为什么普通哈希求交不安全</h3><p>Alice 和 Bob 想比较手机号集合。他们约定把手机号做 <code>SHA256(phone)</code> 后交换哈希集合。</p>
+<p>请回答：</p>
+<ol>
+<li>这个方案会泄露什么？</li>
+<li>为什么手机号特别容易被字典攻击？</li>
+<li>加盐是否能解决双方求交问题？为什么？</li>
+</ol>
+<p>提示：如果双方各自加不同的盐，相同手机号的哈希还会相同吗？</p>
+<h3 id="题-2：RSA-盲化签名-PSI-的推导"><a href="#题-2：RSA-盲化签名-PSI-的推导" class="headerlink" title="题 2：RSA 盲化签名 PSI 的推导"></a>题 2：RSA 盲化签名 PSI 的推导</h3><p>设 Bob 的 RSA 公钥是 <code>(N, e)</code>，私钥是 <code>d</code>。Alice 对元素 <code>x</code> 计算 <code>m=H(x)</code>，选择随机数 <code>r</code>，发送：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">z = m * r^e mod N</span><br></pre></td></tr></table></figure>
+
+<p>Bob 返回：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">u = z^d mod N</span><br></pre></td></tr></table></figure>
+
+<p>请推导 Alice 为什么可以通过 <code>u * r^-1 mod N</code> 得到 <code>m^d mod N</code>。</p>
+<h3 id="题-3：可交换加密为什么能比较交集"><a href="#题-3：可交换加密为什么能比较交集" class="headerlink" title="题 3：可交换加密为什么能比较交集"></a>题 3：可交换加密为什么能比较交集</h3><p>Alice 的秘密指数是 <code>a</code>，Bob 的秘密指数是 <code>b</code>。元素哈希后为 <code>h</code>。</p>
+<p>请解释为什么：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">(h^a)^b = (h^b)^a</span><br></pre></td></tr></table></figure>
+
+<p>并说明这个等式对 PSI 有什么用。</p>
+<h3 id="题-4：多项式-PSI-的成员判断"><a href="#题-4：多项式-PSI-的成员判断" class="headerlink" title="题 4：多项式 PSI 的成员判断"></a>题 4：多项式 PSI 的成员判断</h3><p>Alice 集合是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">X = &#123;2, 5, 9&#125;</span><br></pre></td></tr></table></figure>
+
+<p>构造：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">P(t) = (t - 2)(t - 5)(t - 9)</span><br></pre></td></tr></table></figure>
+
+<p>请计算：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">P(5)</span><br><span class="line">P(7)</span><br></pre></td></tr></table></figure>
+
+<p>并说明为什么 <code>P(y)=0</code> 可以表示 <code>y</code> 属于 Alice 的集合。</p>
+<h3 id="题-5：前沿方向判断"><a href="#题-5：前沿方向判断" class="headerlink" title="题 5：前沿方向判断"></a>题 5：前沿方向判断</h3><p>下面场景分别更适合关注哪类 PSI 技术？</p>
+<ol>
+<li>两方各有千万级用户标识，要求互联网环境下低成本运行。</li>
+<li>只需要知道交集大小，不需要知道具体交集元素。</li>
+<li>多家机构共同找交集，参与方超过两个。</li>
+<li>数据需要长期保密，担心未来量子计算威胁。</li>
+</ol>
+<p>可以从 OPRF、OT&#x2F;OTE、PSI-CA、多方 PSI、VOLE-based PSI、后量子 PSI 中选择关键词。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
+<li>Andrew C. Yao, Protocols for Secure Computations, 1982.</li>
+<li>Michael J. Freedman, Kobbi Nissim, Benny Pinkas, Efficient Private Matching and Set Intersection, EUROCRYPT 2004.</li>
+<li>Benny Pinkas 等，Private Set Intersection in the Internet Setting from Lightweight Oblivious PRF, CRYPTO 2020.</li>
+<li><a target="_blank" rel="noopener" href="https://www.microsoft.com/en-us/research/publication/private-set-intersection-in-the-internet-setting-from-lightweight-oblivious-prf/?locale=zh-cn">Microsoft Research: Private Set Intersection in the Internet Setting from Lightweight Oblivious PRF</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.microsoft.com/en-us/research/?p=367715">Microsoft Research: Efficient Batched Oblivious PRF with Applications to Private Set Intersection</a></li>
+<li><a target="_blank" rel="noopener" href="https://secretflow.readthedocs.io/en/stable/user_guide/psi.html">SecretFlow PSI 文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/secretflow/psi">SecretFlow PSI&#x2F;PIR GitHub 仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://securecomputation.org/main/">David Evans, Vladimir Kolesnikov, Mike Rosulek, A Pragmatic Introduction to Secure Multi-Party Computation</a></li>
+<li>近年 volePSI、silent VOLE、PCG、post-quantum PSI 相关论文和实现。</li>
+</ol>
+
+    </div>
+    
+    
+    
+    
+    
+    
+    
+</div>
+
+            <footer id="footer">
+    <div id="footer-wrap">
+        <div>
+            &copy;
+            2025 - 2026 Yin&#39;s Blog
+            <span id="footer-icon">
+                <i class="fa-solid fa-font-awesome fa-fw"></i>
+            </span>
+            &commat;Yin
+        </div>
+        <div>
+            Based on the <a target="_blank" rel="noopener" href="https://hexo.io">Hexo Engine</a> &amp;
+            <a target="_blank" rel="noopener" href="https://github.com/theme-particlex/hexo-theme-particlex">ParticleX Theme</a>
+        </div>
+        
+    </div>
+</footer>
+
+        </div>
+        
+        <transition name="fade">
+            <div id="preview" ref="preview" v-show="previewShow">
+                <img id="preview-content" ref="previewContent" />
+            </div>
+        </transition>
+        
+    </div>
+    <script src="/js/main.js"></script>
+    
+    
+
+
+
+
+    
+</body>
+</html>
