@@ -1,0 +1,579 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>电子取证——邮件篇 | Yin&#39;s Blog</title>
+    <meta name="author" content="Yin" />
+    <meta name="description" content="一个热爱技术的开发者的个人博客，分享编程心得和生活感悟" />
+    <meta name="keywords" content="hexo,blog,技术博客,编程,开发" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+    />
+    <link rel="icon" href="/images/avatar.jpg" />
+    <link rel="preconnect" href="https://s4.zstatic.net" />
+<script src="https://s4.zstatic.net/ajax/libs/vue/3.3.7/vue.global.prod.min.js"></script>
+<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.cn" />
+<link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin />
+<link
+    rel="stylesheet"
+    href="https://fonts.googleapis.cn/css2?family=Fira+Code:wght@400;500;600;700&family=Lexend:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;600;700;800;900&display=swap"
+/>
+<script> const mixins = {}; </script>
+
+<script src="https://polyfill.alicdn.com/v3/polyfill.min.js?features=default"></script>
+
+
+
+
+<script src="/js/lib/preview.js"></script>
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css" />
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+    <div id="layout">
+        <transition name="fade">
+            <div id="loading" v-show="loading">
+                <div id="loading-circle">
+                    <h2>LOADING</h2>
+                    <p>加载过慢请开启缓存 浏览器默认开启</p>
+                    <img src="/images/loading.gif" />
+                </div>
+            </div>
+        </transition>
+        <div id="menu" :class="{ hidden: hiddenMenu, 'menu-color': menuColor}">
+    <nav id="desktop-menu">
+        <a class="title" href="/">
+            <span>YIN&#39;S BLOG</span>
+        </a>
+        
+        <a href="/">
+            <i class="fa-solid fa-house fa-fw"></i>
+            <span>&ensp;Home</span>
+        </a>
+        
+        <a href="/about">
+            <i class="fa-solid fa-id-card fa-fw"></i>
+            <span>&ensp;About</span>
+        </a>
+        
+        <a href="/archives">
+            <i class="fa-solid fa-box-archive fa-fw"></i>
+            <span>&ensp;Archives</span>
+        </a>
+        
+        <a href="/categories">
+            <i class="fa-solid fa-bookmark fa-fw"></i>
+            <span>&ensp;Categories</span>
+        </a>
+        
+        <a href="/tags">
+            <i class="fa-solid fa-tags fa-fw"></i>
+            <span>&ensp;Tags</span>
+        </a>
+        
+    </nav>
+    <nav id="mobile-menu">
+        <div class="title" @click="showMenuItems = !showMenuItems">
+            <i class="fa-solid fa-bars fa-fw"></i>
+            <span>&emsp;YIN&#39;S BLOG</span>
+        </div>
+        <transition name="slide">
+            <div class="items" v-show="showMenuItems">
+                
+                <a href="/">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-house fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Home</div>
+                    </div>
+                </a>
+                
+                <a href="/about">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-id-card fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">About</div>
+                    </div>
+                </a>
+                
+                <a href="/archives">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-box-archive fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Archives</div>
+                    </div>
+                </a>
+                
+                <a href="/categories">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-bookmark fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Categories</div>
+                    </div>
+                </a>
+                
+                <a href="/tags">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-tags fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Tags</div>
+                    </div>
+                </a>
+                
+            </div>
+        </transition>
+    </nav>
+</div>
+<transition name="fade">
+    <div id="menu-curtain" @click="showMenuItems = !showMenuItems" v-show="showMenuItems"></div>
+</transition>
+
+        <div id="main" :class="loading ? 'into-enter-from': 'into-enter-active'">
+            <div class="article">
+    <div>
+        <h1>电子取证——邮件篇</h1>
+    </div>
+    <div class="info">
+        
+        <span class="category">
+            <a href="/categories/%E7%94%B5%E5%AD%90%E5%8F%96%E8%AF%81/">
+                <span class="icon">
+                    <i class="fa-solid fa-bookmark fa-fw"></i>
+                </span>
+                电子取证
+            </a>
+        </span>
+        
+        
+        <span class="tags">
+            <span class="icon">
+                <i class="fa-solid fa-tags fa-fw"></i>
+            </span>
+            
+            
+            <span class="tag">
+                
+                <a href="/tags/%E7%BE%8E%E4%BA%9A%E6%9D%AF/" style="color: #00a596">
+                    美亚杯
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/%E7%94%B5%E5%AD%90%E5%8F%96%E8%AF%81/" style="color: #ff7d73">
+                    电子取证
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/%E9%82%AE%E4%BB%B6%E5%88%86%E6%9E%90/" style="color: #00bcd4">
+                    邮件分析
+                </a>
+            </span>
+            
+        </span>
+        
+    </div>
+    
+    <div class="content" v-pre>
+        <blockquote>
+<p>在网络诈骗案件中，钓鱼邮件往往是受害人接触诈骗链条的第一步。邮件取证不是只看“发件人显示是谁”，而是要把邮件头、MIME 结构、附件、认证结果和投递链条一起看。</p>
+</blockquote>
+<p>这篇文章先讲邮件取证中最常用的知识点，再用 2025 年美亚杯团队赛邮件材料前 16 题来对应练习。写题的时候要记住一个原则：<strong>邮件客户端显示出来的内容只是结果，真正的证据要回到原始 EML 和邮件头里找。</strong></p>
+<h2 id="1-邮件由哪几部分组成"><a href="#1-邮件由哪几部分组成" class="headerlink" title="1. 邮件由哪几部分组成"></a>1. 邮件由哪几部分组成</h2><p>一封邮件可以粗略拆成三层：信封、邮件头、邮件体。</p>
+<p><strong>信封（Envelope）</strong> 是 SMTP 传输过程中使用的信息，例如 <code>MAIL FROM</code> 和 <code>RCPT TO</code>。它更像快递系统里的投递指令，用户平时在客户端里不一定能直接看到。取证时常通过 <code>Return-Path</code>、投递日志、邮件服务器日志去补充判断。</p>
+<p><strong>邮件头（Header）</strong> 是邮件取证的核心区域，里面记录了元数据和投递过程。常见字段包括：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>取证意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Received</code></td>
+<td>邮件经过哪些服务器。一般自下而上读，最下面更接近发起端</td>
+</tr>
+<tr>
+<td><code>From</code></td>
+<td>客户端显示的发件人，容易被伪造</td>
+</tr>
+<tr>
+<td><code>Reply-To</code></td>
+<td>收件人点击回复时实际回到哪里</td>
+</tr>
+<tr>
+<td><code>Return-Path</code></td>
+<td>退信地址，常对应信封发件人</td>
+</tr>
+<tr>
+<td><code>Message-ID</code></td>
+<td>邮件唯一标识，常能反映生成邮件的客户端或域</td>
+</tr>
+<tr>
+<td><code>Date</code></td>
+<td>发件客户端写入的时间，不一定等于服务器接收时间</td>
+</tr>
+<tr>
+<td><code>Authentication-Results</code></td>
+<td>SPF、DKIM、DMARC、ARC 等认证结果</td>
+</tr>
+<tr>
+<td><code>User-Agent</code> &#x2F; <code>X-Mailer</code></td>
+<td>发送邮件的软件或客户端</td>
+</tr>
+</tbody></table>
+<p><strong>邮件体（Body）</strong> 是正文和附件所在的位置，通常遵循 MIME 标准。正文、HTML、内嵌图片、附件会被拆成多个 MIME part，每一段由 <code>boundary</code> 分隔。</p>
+<p>区分正文和附件时，最常看的字段是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Content-Disposition: inline</span><br><span class="line">Content-Disposition: attachment</span><br></pre></td></tr></table></figure>
+
+<p><code>inline</code> 更偏向正文内嵌内容，<code>attachment</code> 才是独立附件。注意：附件即使用 Base64 编码写在 EML 文本里，也仍然可以是独立 MIME part，并不等于“嵌入在正文中”。</p>
+<h3 id="对应题目：邮件取证时应注意什么"><a href="#对应题目：邮件取证时应注意什么" class="headerlink" title="对应题目：邮件取证时应注意什么"></a>对应题目：邮件取证时应注意什么</h3><p><strong>题 1：在电子邮件取证方面，警方需要注意以下哪些要点？</strong></p>
+<blockquote>
+<p>A. 修改邮件时间戳等元数据以迎合调查时间线<br>B. 全面检索相关草稿箱与已删除邮件数据<br>C. 必须确认取证行为获得合法授权，并严格限定提取范围<br>D. 确保元数据完整性，原始 eml 文件应作为证据链关键环节保存<br>E. 应备份邮件系统相关日志，确保调查工作有据可查</p>
+</blockquote>
+<p>答案：<code>BCDE</code></p>
+<p>这题是基本原则题。取证不能为了匹配案情去改元数据，A 明显错误。邮件案件里除了收件箱，还要看草稿箱、已删除邮件、服务器日志、客户端缓存和原始 EML。原始 EML 很重要，因为邮件头、MIME 边界、编码方式、附件传输方式都在里面。</p>
+<h2 id="2-MIME-结构、附件和编码"><a href="#2-MIME-结构、附件和编码" class="headerlink" title="2. MIME 结构、附件和编码"></a>2. MIME 结构、附件和编码</h2><p>邮件正文和附件不是简单拼在一起的，而是按 MIME 结构组织。一个常见邮件可能长这样：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">multipart/mixed</span><br><span class="line">├── multipart/alternative</span><br><span class="line">│   ├── text/plain</span><br><span class="line">│   └── text/html</span><br><span class="line">├── image/jpeg     Content-Disposition: inline</span><br><span class="line">└── application/pdf Content-Disposition: attachment</span><br></pre></td></tr></table></figure>
+
+<p>取证时要先看结构，再看内容。只看客户端预览很容易误判附件、内嵌图片和正文之间的关系。</p>
+<p>常见编码方式如下：</p>
+<table>
+<thead>
+<tr>
+<th>编码</th>
+<th>识别标志</th>
+<th>常见位置</th>
+<th>取证重点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Base64</td>
+<td><code>Content-Transfer-Encoding: base64</code></td>
+<td>附件、图片、二进制内容</td>
+<td>需要解码后再做文件类型、哈希、EXIF、恶意代码检查</td>
+</tr>
+<tr>
+<td>Quoted-Printable</td>
+<td><code>quoted-printable</code> 或邮件头里的 <code>=?utf-8?Q?...?=</code></td>
+<td>HTML 正文、邮件标题</td>
+<td>大量 <code>=E4</code> 这类十六进制转义</td>
+</tr>
+<tr>
+<td>7bit</td>
+<td><code>7bit</code></td>
+<td>纯 ASCII 英文</td>
+<td>基本可直接阅读</td>
+</tr>
+<tr>
+<td>8bit</td>
+<td><code>8bit</code></td>
+<td>UTF-8 文本</td>
+<td>可直接承载非 ASCII 字符</td>
+</tr>
+<tr>
+<td>binary</td>
+<td><code>binary</code></td>
+<td>极少见</td>
+<td>SMTP 传输中受限，实际邮件里通常不用</td>
+</tr>
+<tr>
+<td>Encoded-Word</td>
+<td><code>=?charset?B?...?=</code> 或 <code>=?charset?Q?...?=</code></td>
+<td><code>Subject</code>、显示名</td>
+<td>邮件头专用编码</td>
+</tr>
+</tbody></table>
+<p>邮件头里的编码要特别注意。例如：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Subject: =?utf-8?Q?Exclusive_Invitation=3A_IQ_Coin?=</span><br><span class="line">Subject: =?utf-8?B?5L2g5aW9?=</span><br></pre></td></tr></table></figure>
+
+<p><code>Q</code> 代表 Q-Encode，接近 Quoted-Printable；<code>B</code> 代表 Base64。很多钓鱼邮件会把标题拆成多段编码，绕过关键词匹配。</p>
+<h3 id="对应题目：附件结构"><a href="#对应题目：附件结构" class="headerlink" title="对应题目：附件结构"></a>对应题目：附件结构</h3><p><strong>题 2：请分析邮件材料中的附件结构，并指出哪项描述正确？</strong></p>
+<blockquote>
+<p>A. PDF 附件包含 JavaScript 代码，用于从外部来源动态加载内容<br>B. JPG 附件的元数据包含地理位置信息<br>C. 邮件附件并非以独立附件传输，而是以 Base64 编码方式嵌入在正文中<br>D. 邮件中有使用标准 ASCII 字符集编码系统表示字符及未加密的纯文本文件附件<br>E. 以上皆不正确</p>
+</blockquote>
+<p>答案：<code>E</code></p>
+<p>分析思路：</p>
+<ol>
+<li>PDF 可以用 <code>pdfid.py</code> 检查 <code>/JS</code>、<code>/JavaScript</code>、<code>/OpenAction</code> 等危险标记，题中 PDF 没有 JavaScript 代码块。</li>
+<li>JPG 附件查看 EXIF 后没有地理位置信息。</li>
+<li>附件位于独立的 <code>Content-Disposition: attachment</code> MIME part 中。Base64 只是附件传输编码，不代表它不是独立附件。</li>
+<li>没有 <code>Content-Type: text/plain</code> 的纯文本附件，附件也不是“标准 ASCII 字符集未加密纯文本文件”。</li>
+</ol>
+<h3 id="对应题目：MIME-中未使用的编码"><a href="#对应题目：MIME-中未使用的编码" class="headerlink" title="对应题目：MIME 中未使用的编码"></a>对应题目：MIME 中未使用的编码</h3><p><strong>题 3：请分析 MIME 格式结构，并指出哪种内容编码未被使用？</strong></p>
+<blockquote>
+<p>A. 7bit<br>B. quoted-printable<br>C. base64<br>D. binary<br>E. 8bit</p>
+</blockquote>
+<p>答案：<code>D</code></p>
+<p>题中能看到 <code>=?utf-8?Q?...?=</code> 这类 Q-Encode&#x2F;Quoted-Printable 痕迹，也能看到明显的 Base64 块。英文内容对应 7bit，UTF-8 非 ASCII 文本可以视为 8bit 范畴。<code>binary</code> 在标准邮件传输中受限制，实际附件通常会转成 Base64，因此本题未使用的是 <code>binary</code>。</p>
+<h3 id="对应题目：附件里的钱包地址"><a href="#对应题目：附件里的钱包地址" class="headerlink" title="对应题目：附件里的钱包地址"></a>对应题目：附件里的钱包地址</h3><p><strong>题 4：哪两个附件藏有加密货币地址 <code>0x548dafDe4B17d7d3C9485E79B3B5018801C7855E</code>？</strong></p>
+<blockquote>
+<p>A. <code>IQ_1.jpg</code> 和 <code>IQ coin proposal.pdf</code><br>B. <code>IQ_Coin_Tokenomics_Overview.pdf</code> 和 <code>IQ_Coin_Compliance_Summary.pdf</code><br>C. <code>7b3e4512-1d8d-4d54-AA1c-5b004ce23A6f.jpeg</code> 和 <code>IQ_Coin_Compliance_Summary.pdf</code><br>D. <code>IQ_1.jpg</code> 和 <code>7b3e4512-1d8d-4d54-AA1c-5b004ce23A6f.jpeg</code><br>E. <code>IQ coin proposal.pdf</code> 和 <code>IQ_Coin_Compliance_Summary.pdf</code></p>
+</blockquote>
+<p>答案：<code>D</code></p>
+<p>这题考的是附件内容分析，不是邮件头。两个图片附件里都有二维码，二维码解码后能得到目标钱包地址。比赛中可以用 QR Research、BQRCodeReader、zbarimg 或在线&#x2F;离线二维码工具识别。实际取证时建议导出附件后计算哈希，再对二维码结果截图或记录工具输出，形成证据链。</p>
+<h2 id="3-发件人显示、原始发件人与身份认证"><a href="#3-发件人显示、原始发件人与身份认证" class="headerlink" title="3. 发件人显示、原始发件人与身份认证"></a>3. 发件人显示、原始发件人与身份认证</h2><p>邮件里最容易误导人的就是 <code>From</code>。客户端显示的发件人可以和原始发件人、回复地址、投递账户不一致。</p>
+<p>常见相关字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>From</code></td>
+<td>用户看到的发件人</td>
+</tr>
+<tr>
+<td><code>X-Google-Original-From</code></td>
+<td>Gmail 等服务保留的原始发件人信息</td>
+</tr>
+<tr>
+<td><code>Reply-To</code></td>
+<td>回复地址</td>
+</tr>
+<tr>
+<td><code>Return-Path</code></td>
+<td>退信地址</td>
+</tr>
+<tr>
+<td><code>Authentication-Results</code></td>
+<td>认证结论</td>
+</tr>
+</tbody></table>
+<p>现代邮件认证主要看 SPF、DKIM、DMARC、ARC。</p>
+<p><strong>SPF</strong> 检查发件 IP 是否被发件域授权。它回答的是“这台服务器有没有资格代表该域发信”。</p>
+<p><strong>DKIM</strong> 使用数字签名验证邮件内容和部分头字段是否被篡改。它回答的是“这封邮件是否由持有该域私钥的一方签过名”。</p>
+<p><strong>DMARC</strong> 在 SPF&#x2F;DKIM 之上增加域名对齐要求。只有 SPF 或 DKIM 至少一个通过，并且与 <code>From</code> 域对齐，DMARC 才能通过。</p>
+<p><strong>ARC</strong> 用于转发场景，记录中间节点看到的认证结果。如果 ARC 为 <code>None</code>，说明没有 ARC 链可以帮你背书，这时更要回到 SPF、DKIM、DMARC、域名对齐和 <code>Received</code> 链综合判断。</p>
+<h3 id="对应题目：原始发件人与显示发件人"><a href="#对应题目：原始发件人与显示发件人" class="headerlink" title="对应题目：原始发件人与显示发件人"></a>对应题目：原始发件人与显示发件人</h3><p><strong>题 5：哪一封邮件的原始发件人地址是 <code>marketing@manson.com</code>？</strong></p>
+<p>答案：<code>Exclusive Invitation_IQ Coin Pure Growth Fund – Special Offer for You 2025-04-29T18_35_47+08_00.eml</code></p>
+<p>也就是选项 <code>A</code>。</p>
+<p>这题要看邮件头中的原始发件人字段。该邮件客户端显示为：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Marketing &lt;mansonmfi@gmail.com&gt;</span><br></pre></td></tr></table></figure>
+
+<p>但邮件头中可以看到：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">X-Google-Original-From: Marketing &lt;marketing@manson.com&gt;</span><br><span class="line">Reply-To: Marketing &lt;marketing@manson.com&gt;</span><br></pre></td></tr></table></figure>
+
+<p>因此原始发件人线索指向 <code>marketing@manson.com</code>，而收件人界面看到的发件地址不是它。</p>
+<p><strong>题 6：根据上一题，收件者会见到这封邮件来自哪一个邮箱地址？</strong></p>
+<p>答案：<code>mansonmfi@gmail.com</code></p>
+<p>这题要区分“原始发件人”和“用户看到的 From”。客户端收件界面显示的是 <code>Marketing &lt;mansonmfi@gmail.com&gt;</code>，所以收件者看到的是 Gmail 地址。</p>
+<h3 id="对应题目：ARC-为-None-时怎么判断真伪"><a href="#对应题目：ARC-为-None-时怎么判断真伪" class="headerlink" title="对应题目：ARC 为 None 时怎么判断真伪"></a>对应题目：ARC 为 None 时怎么判断真伪</h3><p><strong>题 7：邮件头中 ARC 验证结果为 None 时，可以通过哪些方式辅助判断邮件真伪？</strong></p>
+<blockquote>
+<p>A. SPF<br>B. DKIM<br>C. 域名对齐<br>D. 以上皆可以</p>
+</blockquote>
+<p>答案：<code>D</code></p>
+<p>ARC 没有结果不代表邮件一定假，只是少了一条转发链背书。此时要看 SPF 是否授权、DKIM 是否签名通过、<code>From</code> 与 SPF&#x2F;DKIM 域是否对齐，再结合 <code>Received</code> 链判断来源是否合理。</p>
+<h2 id="4-Received-链、客户端和传输安全"><a href="#4-Received-链、客户端和传输安全" class="headerlink" title="4. Received 链、客户端和传输安全"></a>4. Received 链、客户端和传输安全</h2><p><code>Received</code> 是邮件溯源最常用的字段。阅读顺序一般是<strong>自下而上</strong>：越下面越接近邮件发起端，越上面越接近最终收件服务器。</p>
+<p>常见关键字：</p>
+<table>
+<thead>
+<tr>
+<th>关键字</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>with ESMTPS</code></td>
+<td>使用加密 SMTP 传输</td>
+</tr>
+<tr>
+<td><code>with ESMTPSA</code></td>
+<td>使用 SMTP AUTH，说明经过身份认证提交</td>
+</tr>
+<tr>
+<td><code>with HTTP</code></td>
+<td>常见于网页版邮件提交</td>
+</tr>
+<tr>
+<td><code>by smtp.gmail.com</code></td>
+<td>邮件由 Gmail SMTP 服务处理</td>
+</tr>
+<tr>
+<td><code>using TLSv1.3 with cipher ...</code></td>
+<td>传输层安全版本和加密套件</td>
+</tr>
+</tbody></table>
+<p>邮件客户端也可能写入：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">User-Agent: eM Client/10.3.1503.0</span><br><span class="line">X-Mailer: ...</span><br></pre></td></tr></table></figure>
+
+<p>这类字段可以回答“用什么软件发送”，但也要注意它们理论上可以被伪造，需要和投递链、Message-ID 形态一起看。</p>
+<h3 id="对应题目：是否经-Gmail-服务器发送"><a href="#对应题目：是否经-Gmail-服务器发送" class="headerlink" title="对应题目：是否经 Gmail 服务器发送"></a>对应题目：是否经 Gmail 服务器发送</h3><p><strong>题 8：分析 <code>Exclusive Invitation...eml</code> 邮件头，哪项说法正确？</strong></p>
+<p>答案：<code>D. 邮件路由信息与域名引用证实该邮件经 Gmail 服务器发送邮件</code></p>
+<p>关键证据在 <code>Received</code> 链：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Received: from mail-pl1-f193.google.com ...</span><br><span class="line">Received: from ?IPv6:::ffff:192.168.220.130? ...</span><br><span class="line">        by smtp.gmail.com with ESMTPSA ...</span><br></pre></td></tr></table></figure>
+
+<p><code>smtp.gmail.com</code> 和 <code>ESMTPSA</code> 说明这封邮件是通过 Gmail 的 SMTP 服务并经过认证提交。注意这只能说明经过 Gmail 发出，不等于内容可信，也不等于 <code>manson.com</code> 域名身份一定真实。</p>
+<h3 id="对应题目：发送客户端"><a href="#对应题目：发送客户端" class="headerlink" title="对应题目：发送客户端"></a>对应题目：发送客户端</h3><p><strong>题 9：该邮件使用哪一个邮件客户端软件发送？</strong></p>
+<p>答案：<code>eM_Client/10.3.1503.0</code></p>
+<p>直接看邮件头：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">User-Agent: eM Client/10.3.1503.0</span><br></pre></td></tr></table></figure>
+
+<p>题目要求“连同版本代号根据标题文件内原文作答”，所以要保留完整字符串。</p>
+<h3 id="对应题目：检测欺骗或标头伪造的字段组合"><a href="#对应题目：检测欺骗或标头伪造的字段组合" class="headerlink" title="对应题目：检测欺骗或标头伪造的字段组合"></a>对应题目：检测欺骗或标头伪造的字段组合</h3><p><strong>题 10：哪组标头组合可用于检测欺骗或标头伪造行为？</strong></p>
+<blockquote>
+<p>A. From、To、Subject<br>B. Message-ID、Received、Authentication-Results<br>C. DKIM、MIME-Version、Content-Type<br>D. Return-Path、X-Gm-Message-State、X-Pm-Spam<br>E. DKIM-Signature、SPF、Authentication-Results</p>
+</blockquote>
+<p>答案：<code>B</code></p>
+<p><code>From/To/Subject</code> 是展示层字段，容易伪造且不能单独证明来源。真正判断伪造时，应结合：</p>
+<ol>
+<li><code>Received</code>：投递路径是否合理；</li>
+<li><code>Authentication-Results</code>：SPF、DKIM、DMARC 结果；</li>
+<li><code>Message-ID</code>：生成域、格式和客户端特征是否与声称来源矛盾。</li>
+</ol>
+<p>E 里虽然有 DKIM、SPF，但 SPF 通常是认证结果，不是一个独立原始头字段；而且缺少 <code>Received</code> 链，不如 B 完整。</p>
+<h3 id="对应题目：Received-跃点数量"><a href="#对应题目：Received-跃点数量" class="headerlink" title="对应题目：Received 跃点数量"></a>对应题目：Received 跃点数量</h3><p><strong>题 11：分析 <code>Re_Proposal...2025-05-02T15_14_02+08_00</code> 的 Received 链，邮件从发起到送达 ProtonMail 经历多少网络跃点？</strong></p>
+<p>答案：<code>B. 2 个跃点：发件人客户端 -&gt; Gmail 服务器 -&gt; ProtonMail 服务器</code></p>
+<p>邮件头中能看到三条 <code>Received</code>：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Received: ... by mailinosl106.protonmail.ch ...</span><br><span class="line">Received: by mail-ed1-f54.google.com ...</span><br><span class="line">Received: by ... with HTTP ...</span><br></pre></td></tr></table></figure>
+
+<p>最下面的 <code>with HTTP</code> 代表网页版发起，随后进入 Gmail，再到 ProtonMail。题目按网络投递链概括为客户端到 Gmail、Gmail 到 ProtonMail，所以答案是 2 个跃点。</p>
+<h3 id="对应题目：相同-IPv6-地址说明什么"><a href="#对应题目：相同-IPv6-地址说明什么" class="headerlink" title="对应题目：相同 IPv6 地址说明什么"></a>对应题目：相同 IPv6 地址说明什么</h3><p><strong>题 12：两封邮件源自相同 IPv6 地址，下列哪个正确？</strong></p>
+<p>答案：<code>B. 这说明两封邮件经过了同一出站节点</code></p>
+<p>相同 IPv6 可以作为关联线索，但不能直接证明“同一台设备”“同一账号”或“具体某个人”。邮件服务商可能有前端、代理、负载均衡和隐私保护机制。比赛里这类题要保守表述：它说明两封邮件经过同一出站节点。</p>
+<h3 id="对应题目：TLS-加密套件"><a href="#对应题目：TLS-加密套件" class="headerlink" title="对应题目：TLS 加密套件"></a>对应题目：TLS 加密套件</h3><p><strong>题 13：邮件通过 TLSv1.3 传送时使用了哪一个加密套件？</strong></p>
+<p>答案：<code>A. AES 256 GCM SHA384</code></p>
+<p>邮件头中有类似字段：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">using TLSv1.3 with cipher TLS_AES_256_GCM_SHA384</span><br></pre></td></tr></table></figure>
+
+<p>所以对应选项是 AES 256 GCM SHA384。这里考的是从 <code>Received</code> 头里读 TLS 元数据，不需要真正解密邮件。</p>
+<h2 id="5-Message-ID-与时间线"><a href="#5-Message-ID-与时间线" class="headerlink" title="5. Message-ID 与时间线"></a>5. Message-ID 与时间线</h2><p><code>Message-ID</code> 的常见格式是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">&lt;unique-string@domain&gt;</span><br></pre></td></tr></table></figure>
+
+<p>它通常由发件客户端或邮件系统生成。取证时可以看：</p>
+<ol>
+<li><code>Message-ID</code> 的域是否与发件系统一致；</li>
+<li>不同邮件的 <code>Message-ID</code> 形态是否相似；</li>
+<li><code>Date</code>、最底层 <code>Received</code> 时间和文件名时间是否能互相对应；</li>
+<li><code>In-Reply-To</code>、<code>References</code> 是否能还原邮件会话链。</li>
+</ol>
+<p>时间线题要区分：</p>
+<table>
+<thead>
+<tr>
+<th>时间</th>
+<th>来源</th>
+<th>可信度与用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Date</code></td>
+<td>发件客户端写入</td>
+<td>可被客户端影响，但能表示邮件声称创建时间</td>
+</tr>
+<tr>
+<td>最底层 <code>Received</code> 时间</td>
+<td>第一台接收服务器记录</td>
+<td>更适合判断进入标准投递链时间</td>
+</tr>
+<tr>
+<td>最上层 <code>Received</code> 时间</td>
+<td>最终收件服务器记录</td>
+<td>更接近送达时间</td>
+</tr>
+<tr>
+<td>文件系统时间</td>
+<td>EML 文件落盘时间</td>
+<td>反映保存&#x2F;导出时间，不一定是发信时间</td>
+</tr>
+</tbody></table>
+<h3 id="对应题目：Message-ID-是否有伪造嫌疑"><a href="#对应题目：Message-ID-是否有伪造嫌疑" class="headerlink" title="对应题目：Message-ID 是否有伪造嫌疑"></a>对应题目：Message-ID 是否有伪造嫌疑</h3><p><strong>题 14：检查 <code>Exclusive Invitation...eml</code> 的 Message-ID 与发件人地址关系，判断是否存在伪造嫌疑。</strong></p>
+<p>答案：<code>A. 正确</code></p>
+<p>邮件头中能看到类似：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Message-Id: &lt;...@8b19b573.com&gt;</span><br><span class="line">From: Marketing &lt;mansonmfi@gmail.com&gt;</span><br><span class="line">Reply-To: Marketing &lt;marketing@manson.com&gt;</span><br></pre></td></tr></table></figure>
+
+<p>表面发件人是 Gmail 地址，原始&#x2F;回复线索又指向 <code>marketing@manson.com</code>，但 <code>Message-ID</code> 域却是 <code>8b19b573.com</code>。这种不一致是伪造或异常客户端生成的可疑信号。</p>
+<h3 id="对应题目：进入标准投递链的起点时间"><a href="#对应题目：进入标准投递链的起点时间" class="headerlink" title="对应题目：进入标准投递链的起点时间"></a>对应题目：进入标准投递链的起点时间</h3><p><strong>题 15：对 <code>Re_Proposal...2025-05-02T14_37_03+08_00.eml</code> 溯源，列出邮件进入标准化投递链条起点，即第一个接收这封邮件的服务器日期及时间（GMT+8）。</strong></p>
+<p>答案：<code>2025-05-02 14:37:00</code></p>
+<p>关键是找最底层 <code>Received</code>：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Received: by 2002:a17:906:eb0c:b0:ace:ee33:12ee with HTTP;</span><br><span class="line">Thu, 1 May 2025 23:37:00 -0700 (PDT)</span><br></pre></td></tr></table></figure>
+
+<p>把 <code>2025-05-01 23:37:00 -0700</code> 换算到 GMT+8，需要加 15 小时，得到：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">2025-05-02 14:37:00</span><br></pre></td></tr></table></figure>
+
+<h3 id="对应题目：该时间是否等于邮件建立时间"><a href="#对应题目：该时间是否等于邮件建立时间" class="headerlink" title="对应题目：该时间是否等于邮件建立时间"></a>对应题目：该时间是否等于邮件建立时间</h3><p><strong>题 16：根据上一题，这个日期时间是否等于这封邮件的建立时间？</strong></p>
+<p>答案：<code>A. 正确</code></p>
+<p>邮件头中 <code>Date</code> 字段同样是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Date: Thu, 01 May 2025 23:37:00 -0700</span><br></pre></td></tr></table></figure>
+
+<p>换算到 GMT+8 后就是 <code>2025-05-02 14:37:00</code>。所以本题中“进入投递链起点时间”和邮件 <code>Date</code> 声称的建立时间一致。</p>
+<h2 id="6-邮件取证小结"><a href="#6-邮件取证小结" class="headerlink" title="6. 邮件取证小结"></a>6. 邮件取证小结</h2><p>做邮件题时可以按这个顺序来：</p>
+<ol>
+<li>保留原始 EML，不要只看客户端截图。</li>
+<li>先看 MIME 结构，区分正文、内嵌图片和独立附件。</li>
+<li>导出附件后做文件类型、哈希、EXIF、二维码、PDF 风险标记检查。</li>
+<li>看 <code>From</code>、<code>Reply-To</code>、<code>Return-Path</code>、<code>X-Original-From</code>，区分显示身份和原始身份。</li>
+<li>自下而上读 <code>Received</code>，找发起端、邮件服务商、收件服务器和时间。</li>
+<li>看 <code>Authentication-Results</code>，结合 SPF、DKIM、DMARC、ARC 和域名对齐。</li>
+<li>检查 <code>Message-ID</code>、<code>User-Agent</code>、<code>Date</code>、<code>References</code>，判断客户端、会话链和伪造嫌疑。</li>
+</ol>
+<p>如果一句话总结：<strong>邮件取证不是相信“谁发来的”，而是证明它怎样被构造、怎样被投递、怎样被认证、又怎样被收件人看到。</strong></p>
+
+    </div>
+    
+    
+    
+    
+    
+    
+    
+</div>
+
+            <footer id="footer">
+    <div id="footer-wrap">
+        <div>
+            &copy;
+            2025 - 2026 Yin&#39;s Blog
+            <span id="footer-icon">
+                <i class="fa-solid fa-font-awesome fa-fw"></i>
+            </span>
+            &commat;Yin
+        </div>
+        <div>
+            Based on the <a target="_blank" rel="noopener" href="https://hexo.io">Hexo Engine</a> &amp;
+            <a target="_blank" rel="noopener" href="https://github.com/theme-particlex/hexo-theme-particlex">ParticleX Theme</a>
+        </div>
+        
+    </div>
+</footer>
+
+        </div>
+        
+        <transition name="fade">
+            <div id="preview" ref="preview" v-show="previewShow">
+                <img id="preview-content" ref="previewContent" />
+            </div>
+        </transition>
+        
+    </div>
+    <script src="/js/main.js"></script>
+    
+    
+
+
+
+
+    
+</body>
+</html>

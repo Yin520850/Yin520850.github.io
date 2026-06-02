@@ -1,0 +1,1042 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>电子取证——iOS文件系统结构 | Yin&#39;s Blog</title>
+    <meta name="author" content="Yin" />
+    <meta name="description" content="一个热爱技术的开发者的个人博客，分享编程心得和生活感悟" />
+    <meta name="keywords" content="hexo,blog,技术博客,编程,开发" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+    />
+    <link rel="icon" href="/images/avatar.jpg" />
+    <link rel="preconnect" href="https://s4.zstatic.net" />
+<script src="https://s4.zstatic.net/ajax/libs/vue/3.3.7/vue.global.prod.min.js"></script>
+<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.cn" />
+<link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin />
+<link
+    rel="stylesheet"
+    href="https://fonts.googleapis.cn/css2?family=Fira+Code:wght@400;500;600;700&family=Lexend:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;600;700;800;900&display=swap"
+/>
+<script> const mixins = {}; </script>
+
+<script src="https://polyfill.alicdn.com/v3/polyfill.min.js?features=default"></script>
+
+
+
+
+<script src="/js/lib/preview.js"></script>
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css" />
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+    <div id="layout">
+        <transition name="fade">
+            <div id="loading" v-show="loading">
+                <div id="loading-circle">
+                    <h2>LOADING</h2>
+                    <p>加载过慢请开启缓存 浏览器默认开启</p>
+                    <img src="/images/loading.gif" />
+                </div>
+            </div>
+        </transition>
+        <div id="menu" :class="{ hidden: hiddenMenu, 'menu-color': menuColor}">
+    <nav id="desktop-menu">
+        <a class="title" href="/">
+            <span>YIN&#39;S BLOG</span>
+        </a>
+        
+        <a href="/">
+            <i class="fa-solid fa-house fa-fw"></i>
+            <span>&ensp;Home</span>
+        </a>
+        
+        <a href="/about">
+            <i class="fa-solid fa-id-card fa-fw"></i>
+            <span>&ensp;About</span>
+        </a>
+        
+        <a href="/archives">
+            <i class="fa-solid fa-box-archive fa-fw"></i>
+            <span>&ensp;Archives</span>
+        </a>
+        
+        <a href="/categories">
+            <i class="fa-solid fa-bookmark fa-fw"></i>
+            <span>&ensp;Categories</span>
+        </a>
+        
+        <a href="/tags">
+            <i class="fa-solid fa-tags fa-fw"></i>
+            <span>&ensp;Tags</span>
+        </a>
+        
+    </nav>
+    <nav id="mobile-menu">
+        <div class="title" @click="showMenuItems = !showMenuItems">
+            <i class="fa-solid fa-bars fa-fw"></i>
+            <span>&emsp;YIN&#39;S BLOG</span>
+        </div>
+        <transition name="slide">
+            <div class="items" v-show="showMenuItems">
+                
+                <a href="/">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-house fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Home</div>
+                    </div>
+                </a>
+                
+                <a href="/about">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-id-card fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">About</div>
+                    </div>
+                </a>
+                
+                <a href="/archives">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-box-archive fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Archives</div>
+                    </div>
+                </a>
+                
+                <a href="/categories">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-bookmark fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Categories</div>
+                    </div>
+                </a>
+                
+                <a href="/tags">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-tags fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Tags</div>
+                    </div>
+                </a>
+                
+            </div>
+        </transition>
+    </nav>
+</div>
+<transition name="fade">
+    <div id="menu-curtain" @click="showMenuItems = !showMenuItems" v-show="showMenuItems"></div>
+</transition>
+
+        <div id="main" :class="loading ? 'into-enter-from': 'into-enter-active'">
+            <div class="article">
+    <div>
+        <h1>电子取证——iOS文件系统结构</h1>
+    </div>
+    <div class="info">
+        
+        <span class="category">
+            <a href="/categories/%E7%94%B5%E5%AD%90%E5%8F%96%E8%AF%81/">
+                <span class="icon">
+                    <i class="fa-solid fa-bookmark fa-fw"></i>
+                </span>
+                电子取证
+            </a>
+        </span>
+        
+        
+        <span class="tags">
+            <span class="icon">
+                <i class="fa-solid fa-tags fa-fw"></i>
+            </span>
+            
+            
+            <span class="tag">
+                
+                <a href="/tags/%E7%94%B5%E5%AD%90%E5%8F%96%E8%AF%81/" style="color: #00a596">
+                    电子取证
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/iOS/" style="color: #03a9f4">
+                    iOS
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="color: #ffa2c4">
+                    文件系统
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/%E6%89%8B%E6%9C%BA%E5%8F%96%E8%AF%81/" style="color: #00a596">
+                    手机取证
+                </a>
+            </span>
+            
+        </span>
+        
+    </div>
+    
+    <div class="content" v-pre>
+        <blockquote>
+<p>iOS 取证和 Android 最大的不同在于：很多时候你拿到的不是一个“直接可浏览的文件系统”，而是 iTunes&#x2F;MobileSync 备份、Cellebrite&#x2F;GrayKey 等工具导出的逻辑文件，或者按 Domain 组织过的文件集合。</p>
+</blockquote>
+<p>所以 iOS 入门最重要的不是先背某个 APP 的库名，而是先理解：备份怎样把真实路径映射成哈希文件名，系统数据放在哪些 Domain，应用沙盒和 AppGroup 又是什么关系。</p>
+<p>这篇文章按“知识点 + 对应小题”的方式，从取证角度认识 iOS 文件系统结构。</p>
+<h2 id="1-先判断你拿到的是什么"><a href="#1-先判断你拿到的是什么" class="headerlink" title="1. 先判断你拿到的是什么"></a>1. 先判断你拿到的是什么</h2><p>iOS 检材常见形态：</p>
+<table>
+<thead>
+<tr>
+<th>检材形态</th>
+<th>常见特征</th>
+<th>第一反应</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>iTunes&#x2F;MobileSync 备份</td>
+<td><code>Info.plist</code>、<code>Manifest.plist</code>、<code>Manifest.db</code>、大量哈希文件</td>
+<td>先看备份元数据，再查 Manifest.db</td>
+</tr>
+<tr>
+<td>Cellebrite&#x2F;逻辑提取</td>
+<td>已还原目录、报告、数据库、plist</td>
+<td>先看工具摘要，再回到原始文件验证</td>
+</tr>
+<tr>
+<td>文件系统提取</td>
+<td><code>/private/var/mobile/</code> 等路径</td>
+<td>直接按真实路径找系统和应用数据</td>
+</tr>
+<tr>
+<td>单个应用容器</td>
+<td><code>Documents</code>、<code>Library</code>、<code>tmp</code></td>
+<td>先判断 AppDomain 或 AppGroup</td>
+</tr>
+<tr>
+<td>iCloud&#x2F;云同步数据</td>
+<td>CloudDocs、照片、备份记录</td>
+<td>注意本地与云端状态</td>
+</tr>
+</tbody></table>
+<p>iOS 题常见排查顺序：</p>
+<ol>
+<li>问设备型号、系统版本、IMEI、备份时间：看 <code>Info.plist</code>。</li>
+<li>问备份是否加密：看 <code>Manifest.plist</code>。</li>
+<li>问某文件在备份里真实文件名：查 <code>Manifest.db</code>。</li>
+<li>问短信、通话、通讯录、Safari：看 HomeDomain 下系统数据库。</li>
+<li>问照片、截图、来源 APP、GPS：看 <code>Photos.sqlite</code>。</li>
+<li>问 WhatsApp、Telegram、微信：看 AppDomain 和 AppGroup。</li>
+<li>问 AirDrop、应用前台、系统交互：看 CoreDuet。</li>
+</ol>
+<h3 id="小题-1"><a href="#小题-1" class="headerlink" title="小题 1"></a>小题 1</h3><p>你拿到一个 iPhone 备份目录，里面有 <code>Info.plist</code>、<code>Manifest.plist</code>、<code>Manifest.db</code>。题目问设备型号和最后备份时间，第一步看哪个文件？</p>
+<p>答案：<code>Info.plist</code></p>
+<p>解析：<code>Info.plist</code> 保存设备名称、机型标识、系统版本、序列号、IMEI、最后备份时间等摘要信息。</p>
+<h2 id="2-MobileSync-备份结构"><a href="#2-MobileSync-备份结构" class="headerlink" title="2. MobileSync 备份结构"></a>2. MobileSync 备份结构</h2><p>Windows 上 iPhone 本地备份常见位置：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">C:\Users\&lt;user&gt;\AppData\Roaming\Apple Computer\MobileSync\Backup\</span><br></pre></td></tr></table></figure>
+
+<p>macOS 上常见位置：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">~/Library/Application Support/MobileSync/Backup/</span><br></pre></td></tr></table></figure>
+
+<p>备份目录中最重要的三个文件：</p>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Info.plist</code></td>
+<td>设备信息、备份时间、系统版本</td>
+</tr>
+<tr>
+<td><code>Manifest.plist</code></td>
+<td>备份整体元数据、是否加密、BackupKeyBag</td>
+</tr>
+<tr>
+<td><code>Manifest.db</code></td>
+<td>文件索引，把逻辑路径映射到真实哈希文件名</td>
+</tr>
+</tbody></table>
+<p>备份里的普通文件通常不是原名保存，而是哈希文件名。例如短信数据库逻辑路径是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">HomeDomain:Library/SMS/sms.db</span><br></pre></td></tr></table></figure>
+
+<p>备份中真实文件名是对 <code>Domain-relativePath</code> 计算 SHA-1 后得到的 40 位十六进制值，并放在前两位对应的子目录下。实际定位时不用手算，直接查 <code>Manifest.db</code> 更稳。</p>
+<h3 id="Info-plist-常见字段"><a href="#Info-plist-常见字段" class="headerlink" title="Info.plist 常见字段"></a><code>Info.plist</code> 常见字段</h3><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Device Name</code> &#x2F; <code>DeviceName</code></td>
+<td>设备名称</td>
+</tr>
+<tr>
+<td><code>ProductType</code></td>
+<td>机型标识，例如 <code>iPhone14,5</code></td>
+</tr>
+<tr>
+<td><code>ProductVersion</code></td>
+<td>iOS 版本</td>
+</tr>
+<tr>
+<td><code>Build Version</code></td>
+<td>构建版本</td>
+</tr>
+<tr>
+<td><code>Serial Number</code> &#x2F; <code>SerialNumber</code></td>
+<td>序列号</td>
+</tr>
+<tr>
+<td><code>IMEI</code></td>
+<td>IMEI</td>
+</tr>
+<tr>
+<td><code>Phone Number</code> &#x2F; <code>PhoneNumber</code></td>
+<td>手机号</td>
+</tr>
+<tr>
+<td><code>Last Backup Date</code> &#x2F; <code>LastBackupDate</code></td>
+<td>最后备份时间</td>
+</tr>
+<tr>
+<td><code>Unique Identifier</code> &#x2F; <code>UniqueDeviceID</code></td>
+<td>UDID 类标识</td>
+</tr>
+</tbody></table>
+<h3 id="Manifest-plist-常见字段"><a href="#Manifest-plist-常见字段" class="headerlink" title="Manifest.plist 常见字段"></a><code>Manifest.plist</code> 常见字段</h3><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>WasEncrypted</code></td>
+<td>备份是否加密</td>
+</tr>
+<tr>
+<td><code>IsEncrypted</code></td>
+<td>加密状态，视版本而定</td>
+</tr>
+<tr>
+<td><code>BackupKeyBag</code></td>
+<td>备份密钥包</td>
+</tr>
+<tr>
+<td><code>Date</code></td>
+<td>备份相关时间</td>
+</tr>
+<tr>
+<td><code>Lockdown</code></td>
+<td>设备摘要信息</td>
+</tr>
+</tbody></table>
+<p>如果工具解析时提示备份加密，但目录中同时存在 <code>Manifest.db_DEC</code>、<code>Manifest.plist_DEC</code>，要优先检查是不是已经有解密后的文件，而不是直接去爆破密码。</p>
+<h3 id="小题-2"><a href="#小题-2" class="headerlink" title="小题 2"></a>小题 2</h3><p>题目问“这个 iPhone 备份是否加密”，优先看哪个文件和字段？</p>
+<p>答案：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Manifest.plist 中的 WasEncrypted / IsEncrypted</span><br></pre></td></tr></table></figure>
+
+<p>解析：备份加密状态属于备份整体元数据，不在短信、照片等业务数据库里。</p>
+<h2 id="3-Manifest-db-与-Domain"><a href="#3-Manifest-db-与-Domain" class="headerlink" title="3. Manifest.db 与 Domain"></a>3. Manifest.db 与 Domain</h2><p><code>Manifest.db</code> 是 iOS 备份定位文件的核心。最常用的表是 <code>Files</code> 或 <code>files</code>，不同版本大小写可能不同，核心字段类似：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>fileID</code></td>
+<td>备份目录里的真实哈希文件名</td>
+</tr>
+<tr>
+<td><code>domain</code></td>
+<td>文件所属域</td>
+</tr>
+<tr>
+<td><code>relativePath</code></td>
+<td>逻辑相对路径</td>
+</tr>
+<tr>
+<td><code>flags</code></td>
+<td>文件、目录、加密等标志</td>
+</tr>
+<tr>
+<td><code>file</code></td>
+<td>bplist 格式的文件元数据</td>
+</tr>
+</tbody></table>
+<p>常见 Domain：</p>
+<table>
+<thead>
+<tr>
+<th>Domain</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>HomeDomain</code></td>
+<td>用户主目录</td>
+</tr>
+<tr>
+<td><code>MediaDomain</code></td>
+<td>媒体文件，例如 DCIM、PhotoData</td>
+</tr>
+<tr>
+<td><code>AppDomain-&lt;bundle-id&gt;</code></td>
+<td>应用私有容器</td>
+</tr>
+<tr>
+<td><code>AppDomainGroup-group.&lt;id&gt;</code></td>
+<td>AppGroup 共享容器</td>
+</tr>
+<tr>
+<td><code>SystemPreferencesDomain</code></td>
+<td>系统偏好设置</td>
+</tr>
+<tr>
+<td><code>KeychainDomain</code></td>
+<td>钥匙串备份</td>
+</tr>
+<tr>
+<td><code>WirelessDomain</code> &#x2F; <code>WiFiDomain</code></td>
+<td>无线相关</td>
+</tr>
+<tr>
+<td><code>HealthDomain</code></td>
+<td>健康数据</td>
+</tr>
+</tbody></table>
+<p>查短信数据库示例：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> fileID, domain, relativePath</span><br><span class="line"><span class="keyword">FROM</span> files</span><br><span class="line"><span class="keyword">WHERE</span> domain <span class="operator">=</span> <span class="string">&#x27;HomeDomain&#x27;</span></span><br><span class="line">  <span class="keyword">AND</span> relativePath <span class="operator">=</span> <span class="string">&#x27;Library/SMS/sms.db&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>查所有数据库：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> fileID, domain, relativePath</span><br><span class="line"><span class="keyword">FROM</span> files</span><br><span class="line"><span class="keyword">WHERE</span> relativePath <span class="keyword">LIKE</span> <span class="string">&#x27;%.db&#x27;</span></span><br><span class="line">   <span class="keyword">OR</span> relativePath <span class="keyword">LIKE</span> <span class="string">&#x27;%.sqlite&#x27;</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> domain, relativePath;</span><br></pre></td></tr></table></figure>
+
+<p>查某个 APP：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> fileID, domain, relativePath</span><br><span class="line"><span class="keyword">FROM</span> files</span><br><span class="line"><span class="keyword">WHERE</span> domain <span class="keyword">LIKE</span> <span class="string">&#x27;AppDomain-net.whatsapp.WhatsApp%&#x27;</span></span><br><span class="line">   <span class="keyword">OR</span> domain <span class="keyword">LIKE</span> <span class="string">&#x27;AppDomainGroup-group.net.whatsapp%&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="小题-3"><a href="#小题-3" class="headerlink" title="小题 3"></a>小题 3</h3><p>题目给出逻辑路径 <code>HomeDomain:Library/SMS/sms.db</code>，要求在备份目录中找到真实文件。你应该直接翻目录猜文件名，还是查哪个数据库？</p>
+<p>答案：查 <code>Manifest.db</code>。</p>
+<p>解析：备份文件名是 SHA-1 哈希值，不是原始文件名。<code>Manifest.db</code> 的 <code>domain + relativePath</code> 可以映射到 <code>fileID</code>。</p>
+<h2 id="4-iOS-的真实目录结构"><a href="#4-iOS-的真实目录结构" class="headerlink" title="4. iOS 的真实目录结构"></a>4. iOS 的真实目录结构</h2><p>在完整文件系统提取中，常见根路径是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">/private/var/mobile/</span><br></pre></td></tr></table></figure>
+
+<p>用户数据、应用数据、媒体数据大多围绕这里展开。</p>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/private/var/mobile/Media/</code></td>
+<td>照片、视频、媒体数据</td>
+</tr>
+<tr>
+<td><code>/private/var/mobile/Library/</code></td>
+<td>系统级用户数据，例如短信、Safari、CallHistory</td>
+</tr>
+<tr>
+<td><code>/private/var/mobile/Containers/Data/Application/&lt;UUID&gt;/</code></td>
+<td>应用私有沙盒</td>
+</tr>
+<tr>
+<td><code>/private/var/mobile/Containers/Shared/AppGroup/&lt;UUID&gt;/</code></td>
+<td>AppGroup 共享容器</td>
+</tr>
+<tr>
+<td><code>/private/var/mobile/Library/Preferences/</code></td>
+<td>用户偏好 plist</td>
+</tr>
+<tr>
+<td><code>/private/var/mobile/Library/CoreDuet/</code></td>
+<td>行为、交互、知识库</td>
+</tr>
+</tbody></table>
+<h3 id="应用沙盒"><a href="#应用沙盒" class="headerlink" title="应用沙盒"></a>应用沙盒</h3><p>iOS 每个应用都有沙盒，典型结构：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Containers/Data/Application/&lt;UUID&gt;/</span><br><span class="line">├── Documents/</span><br><span class="line">├── Library/</span><br><span class="line">│   ├── Preferences/</span><br><span class="line">│   ├── Caches/</span><br><span class="line">│   └── Application Support/</span><br><span class="line">└── tmp/</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>子目录</th>
+<th>取证意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>Documents/</code></td>
+<td>用户生成或应用明确保存的数据</td>
+</tr>
+<tr>
+<td><code>Library/Preferences/</code></td>
+<td>plist 配置，账号、开关、状态</td>
+</tr>
+<tr>
+<td><code>Library/Caches/</code></td>
+<td>缓存、缩略图、接口数据</td>
+</tr>
+<tr>
+<td><code>Library/Application Support/</code></td>
+<td>数据库、业务文件</td>
+</tr>
+<tr>
+<td><code>tmp/</code></td>
+<td>临时文件</td>
+</tr>
+</tbody></table>
+<h3 id="AppGroup"><a href="#AppGroup" class="headerlink" title="AppGroup"></a>AppGroup</h3><p>很多应用会把关键数据放在 AppGroup，而不是 AppDomain。WhatsApp、微信、Telegram 等都可能用共享容器保存数据库、媒体或扩展数据。</p>
+<p>例如 WhatsApp 常见共享容器：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">group.net.whatsapp.WhatsApp.shared</span><br></pre></td></tr></table></figure>
+
+<p>如果只看 <code>AppDomain-net.whatsapp.WhatsApp</code>，可能找不到完整聊天库或媒体索引。</p>
+<h3 id="小题-4"><a href="#小题-4" class="headerlink" title="小题 4"></a>小题 4</h3><p>题目问 WhatsApp 群组和消息，但在 <code>AppDomain-net.whatsapp.WhatsApp</code> 中没有找到完整 <code>ChatStorage.sqlite</code>。下一步应该考虑哪里？</p>
+<p>答案：考虑 <code>AppDomainGroup-group.net.whatsapp.WhatsApp.shared</code> 或完整文件系统中的 AppGroup 共享容器。</p>
+<p>解析：iOS 应用可能把扩展、共享数据、主业务数据库放在 AppGroup 中。</p>
+<h2 id="5-系统数据库：短信、通话、通讯录、Safari"><a href="#5-系统数据库：短信、通话、通讯录、Safari" class="headerlink" title="5. 系统数据库：短信、通话、通讯录、Safari"></a>5. 系统数据库：短信、通话、通讯录、Safari</h2><p>iOS 的很多基础数据都是 SQLite 或 plist。</p>
+<table>
+<thead>
+<tr>
+<th>数据类型</th>
+<th>备份 Domain &#x2F; 路径</th>
+<th>真实路径思路</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>短信&#x2F;iMessage</td>
+<td><code>HomeDomain:Library/SMS/sms.db</code></td>
+<td><code>/private/var/mobile/Library/SMS/sms.db</code></td>
+</tr>
+<tr>
+<td>通讯录</td>
+<td><code>HomeDomain:Library/AddressBook/AddressBook.sqlitedb</code></td>
+<td><code>/private/var/mobile/Library/AddressBook/</code></td>
+</tr>
+<tr>
+<td>通话记录</td>
+<td><code>HomeDomain:Library/CallHistoryDB/CallHistory.storedata</code></td>
+<td><code>/private/var/mobile/Library/CallHistoryDB/</code></td>
+</tr>
+<tr>
+<td>Safari 历史</td>
+<td><code>HomeDomain:Library/Safari/History.db</code></td>
+<td><code>/private/var/mobile/Library/Safari/</code></td>
+</tr>
+<tr>
+<td>备忘录</td>
+<td><code>HomeDomain:Library/Notes/notes.sqlite</code> 或 AppGroup</td>
+<td>版本差异较大</td>
+</tr>
+<tr>
+<td>Wi-Fi</td>
+<td><code>SystemPreferencesDomain:SystemConfiguration/com.apple.wifi.plist</code></td>
+<td><code>/private/var/preferences/SystemConfiguration/</code></td>
+</tr>
+</tbody></table>
+<h3 id="sms-db"><a href="#sms-db" class="headerlink" title="sms.db"></a><code>sms.db</code></h3><p>核心表：</p>
+<table>
+<thead>
+<tr>
+<th>表</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>message</code></td>
+<td>消息正文、时间、方向、服务类型</td>
+</tr>
+<tr>
+<td><code>handle</code></td>
+<td>对方号码或 Apple ID</td>
+</tr>
+<tr>
+<td><code>chat</code></td>
+<td>会话</td>
+</tr>
+<tr>
+<td><code>attachment</code></td>
+<td>附件</td>
+</tr>
+</tbody></table>
+<p>高频字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>message.text</code></td>
+<td>消息内容</td>
+</tr>
+<tr>
+<td><code>message.date</code></td>
+<td>消息时间</td>
+</tr>
+<tr>
+<td><code>message.is_from_me</code></td>
+<td>是否本人发送</td>
+</tr>
+<tr>
+<td><code>message.service</code></td>
+<td>SMS 或 iMessage</td>
+</tr>
+<tr>
+<td><code>handle.id</code></td>
+<td>对方号码或 Apple ID</td>
+</tr>
+<tr>
+<td><code>attachment.filename</code></td>
+<td>附件路径</td>
+</tr>
+</tbody></table>
+<h3 id="CallHistory-storedata"><a href="#CallHistory-storedata" class="headerlink" title="CallHistory.storedata"></a><code>CallHistory.storedata</code></h3><p>常见表 <code>ZCALLRECORD</code>：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ZADDRESS</code></td>
+<td>电话号码</td>
+</tr>
+<tr>
+<td><code>ZDATE</code></td>
+<td>通话时间</td>
+</tr>
+<tr>
+<td><code>ZDURATION</code></td>
+<td>通话时长</td>
+</tr>
+<tr>
+<td><code>ZCALLTYPE</code></td>
+<td>来电、拨出、未接等</td>
+</tr>
+</tbody></table>
+<h3 id="AddressBook-sqlitedb"><a href="#AddressBook-sqlitedb" class="headerlink" title="AddressBook.sqlitedb"></a><code>AddressBook.sqlitedb</code></h3><p>常见表：</p>
+<table>
+<thead>
+<tr>
+<th>表</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ZABCDRECORD</code></td>
+<td>联系人主体</td>
+</tr>
+<tr>
+<td><code>ZABCDPHONENUMBER</code></td>
+<td>电话号码</td>
+</tr>
+<tr>
+<td><code>ZABCDEMAILADDRESS</code></td>
+<td>邮箱，视版本而定</td>
+</tr>
+</tbody></table>
+<h3 id="小题-5"><a href="#小题-5" class="headerlink" title="小题 5"></a>小题 5</h3><p>题目问“某条 iMessage 是谁发给谁、什么时候发的”，应该优先看哪个数据库和哪些表？</p>
+<p>答案：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">HomeDomain:Library/SMS/sms.db</span><br><span class="line">message、handle、chat、attachment</span><br></pre></td></tr></table></figure>
+
+<p>解析：<code>message</code> 存正文、时间和方向，<code>handle</code> 存对方号码或 Apple ID，附件再看 <code>attachment</code>。</p>
+<h2 id="6-Photos-sqlite：照片题的核心"><a href="#6-Photos-sqlite：照片题的核心" class="headerlink" title="6. Photos.sqlite：照片题的核心"></a>6. Photos.sqlite：照片题的核心</h2><p>iOS 照片题不能只看图片文件和 EXIF。照片库数据库 <code>Photos.sqlite</code> 能回答很多 EXIF 回答不了的问题。</p>
+<p>常见路径：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">MediaDomain:PhotoData/Photos.sqlite</span><br><span class="line">/private/var/mobile/Media/PhotoData/Photos.sqlite</span><br></pre></td></tr></table></figure>
+
+<p>常见表：</p>
+<table>
+<thead>
+<tr>
+<th>表</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ZASSET</code></td>
+<td>资产主体，照片&#x2F;视频基本信息</td>
+</tr>
+<tr>
+<td><code>ZADDITIONALASSETATTRIBUTES</code></td>
+<td>EXIF、原始文件名、导入来源等扩展信息</td>
+</tr>
+<tr>
+<td><code>ZCLOUDMASTER</code></td>
+<td>iCloud 相关资产信息</td>
+</tr>
+<tr>
+<td><code>ZEXTENDEDATTRIBUTES</code></td>
+<td>扩展属性</td>
+</tr>
+</tbody></table>
+<p>高频字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ZFILENAME</code></td>
+<td>文件名</td>
+</tr>
+<tr>
+<td><code>ZDIRECTORY</code></td>
+<td>存储目录</td>
+</tr>
+<tr>
+<td><code>ZDATECREATED</code></td>
+<td>创建&#x2F;拍摄时间</td>
+</tr>
+<tr>
+<td><code>ZADDEDDATE</code></td>
+<td>加入照片库时间</td>
+</tr>
+<tr>
+<td><code>ZMODIFICATIONDATE</code></td>
+<td>修改时间</td>
+</tr>
+<tr>
+<td><code>ZLATITUDE</code> &#x2F; <code>ZLONGITUDE</code></td>
+<td>GPS 坐标</td>
+</tr>
+<tr>
+<td><code>ZTRASHEDSTATE</code></td>
+<td>是否进入最近删除</td>
+</tr>
+<tr>
+<td><code>ZTRASHEDDATE</code></td>
+<td>删除时间</td>
+</tr>
+<tr>
+<td><code>ZHIDDEN</code></td>
+<td>是否隐藏</td>
+</tr>
+<tr>
+<td><code>ZIMPORTEDBYBUNDLEIDENTIFIER</code></td>
+<td>来源 APP</td>
+</tr>
+<tr>
+<td><code>ZIMPORTEDBYDISPLAYNAME</code></td>
+<td>来源 APP 显示名</td>
+</tr>
+<tr>
+<td><code>ZORIGINALFILENAME</code></td>
+<td>原始文件名</td>
+</tr>
+<tr>
+<td><code>ZCAMERACAPTUREDEVICE</code></td>
+<td>前后摄像头线索</td>
+</tr>
+</tbody></table>
+<p>题目问“这张图是不是本机拍的”“是不是截图”“是不是某 APP 保存的”，优先看 <code>ZIMPORTEDBYBUNDLEIDENTIFIER</code>、<code>ZIMPORTEDBYDISPLAYNAME</code>、<code>ZORIGINALFILENAME</code>，再用 EXIF 交叉验证。</p>
+<p>注意：有些库里 <code>ZLATITUDE = -180</code> 或经纬度为 0，可能表示无有效 GPS，不要直接当真实坐标。</p>
+<h3 id="小题-6"><a href="#小题-6" class="headerlink" title="小题 6"></a>小题 6</h3><p>题目问“某张 HEIC 是否由 WhatsApp 保存到相册”，只看文件名够不够？应该优先看哪个字段？</p>
+<p>答案：不够。应优先看 <code>Photos.sqlite</code> 中的 <code>ZIMPORTEDBYBUNDLEIDENTIFIER</code> 或 <code>ZIMPORTEDBYDISPLAYNAME</code>。</p>
+<p>解析：文件名只能提供线索，来源 APP 要看照片库记录。WhatsApp 可能显示为 <code>net.whatsapp.WhatsApp</code>。</p>
+<h2 id="7-CoreDuet：行为和交互痕迹"><a href="#7-CoreDuet：行为和交互痕迹" class="headerlink" title="7. CoreDuet：行为和交互痕迹"></a>7. CoreDuet：行为和交互痕迹</h2><p>CoreDuet 是 iOS 行为分析中很有价值的部分。它记录应用前台、通知、交互、AirDrop 等系统层行为。</p>
+<p>常见路径：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">/private/var/mobile/Library/CoreDuet/</span><br><span class="line">/private/var/mobile/Library/CoreDuet/Knowledge/knowledgeC.db</span><br><span class="line">/private/var/mobile/Library/CoreDuet/People/interactionC.db</span><br></pre></td></tr></table></figure>
+
+<h3 id="knowledgeC-db"><a href="#knowledgeC-db" class="headerlink" title="knowledgeC.db"></a><code>knowledgeC.db</code></h3><p>常见用途：</p>
+<table>
+<thead>
+<tr>
+<th>流</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/app/inFocus</code></td>
+<td>应用前台使用</td>
+</tr>
+<tr>
+<td><code>/notification/usage</code></td>
+<td>通知使用</td>
+</tr>
+<tr>
+<td><code>/display/isBacklit</code></td>
+<td>屏幕状态</td>
+</tr>
+<tr>
+<td><code>/locationVisit</code></td>
+<td>位置访问</td>
+</tr>
+</tbody></table>
+<p>高频字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ZSTREAM.ZNAME</code></td>
+<td>行为流名称</td>
+</tr>
+<tr>
+<td><code>ZEVENT.ZSTARTDATE</code></td>
+<td>开始时间</td>
+</tr>
+<tr>
+<td><code>ZEVENT.ZENDDATE</code></td>
+<td>结束时间</td>
+</tr>
+<tr>
+<td><code>ZEVENT.ZVALUESTRING</code></td>
+<td>应用或行为值</td>
+</tr>
+</tbody></table>
+<h3 id="interactionC-db"><a href="#interactionC-db" class="headerlink" title="interactionC.db"></a><code>interactionC.db</code></h3><p>AirDrop、分享链路、联系人交互题常看它。</p>
+<p>高频字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>ZTARGETBUNDLEID</code></td>
+<td>目标应用&#x2F;服务</td>
+</tr>
+<tr>
+<td><code>ZBUNDLEID</code></td>
+<td>发起应用</td>
+</tr>
+<tr>
+<td><code>ZDIRECTION</code></td>
+<td>方向，发送或接收</td>
+</tr>
+<tr>
+<td><code>ZSENDER</code></td>
+<td>发送者线索</td>
+</tr>
+<tr>
+<td><code>ZSTARTDATE</code></td>
+<td>交互开始时间</td>
+</tr>
+<tr>
+<td><code>ZVALUE</code></td>
+<td>交互对象或补充信息</td>
+</tr>
+</tbody></table>
+<h3 id="小题-7"><a href="#小题-7" class="headerlink" title="小题 7"></a>小题 7</h3><p>题目问“某文件是否通过 AirDrop 接收”，你只看照片库和聊天库没有结果，下一步应该看什么？</p>
+<p>答案：CoreDuet 的 <code>interactionC.db</code>。</p>
+<p>解析：AirDrop 是系统分享行为，很多关键证据在交互数据库里，不一定在聊天数据库中。</p>
+<h2 id="8-plist-与-iOS-时间戳"><a href="#8-plist-与-iOS-时间戳" class="headerlink" title="8. plist 与 iOS 时间戳"></a>8. plist 与 iOS 时间戳</h2><p>iOS 里 plist 很常见，格式可能是 XML，也可能是二进制 <code>bplist00</code>。取证工具、<code>plutil</code>、Python 的 <code>plistlib</code> 都可以解析。</p>
+<p>plist 常见类型：</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>字符串</td>
+<td>账号、SSID、Bundle ID</td>
+</tr>
+<tr>
+<td>整数</td>
+<td>计数、状态</td>
+</tr>
+<tr>
+<td>布尔</td>
+<td>开关</td>
+</tr>
+<tr>
+<td>日期</td>
+<td>标准时间</td>
+</tr>
+<tr>
+<td>Data</td>
+<td>Base64 或二进制 blob</td>
+</tr>
+<tr>
+<td>Array&#x2F;Dict</td>
+<td>嵌套配置</td>
+</tr>
+</tbody></table>
+<p>iOS 时间戳必须重点记：</p>
+<table>
+<thead>
+<tr>
+<th>时间类型</th>
+<th>起点</th>
+<th>单位</th>
+<th>常见位置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Mac Absolute Time &#x2F; Cocoa</td>
+<td>2001-01-01 UTC</td>
+<td>秒</td>
+<td>Photos、CallHistory、CoreDuet、很多 plist</td>
+</tr>
+<tr>
+<td>Apple 纳秒时间</td>
+<td>2001-01-01 UTC</td>
+<td>纳秒</td>
+<td><code>sms.db</code> 中常见</td>
+</tr>
+<tr>
+<td>WebKit 时间</td>
+<td>1601-01-01 UTC</td>
+<td>微秒</td>
+<td>Safari&#x2F;Chromium 历史</td>
+</tr>
+<tr>
+<td>Unix 时间</td>
+<td>1970-01-01 UTC</td>
+<td>秒&#x2F;毫秒</td>
+<td>部分第三方 APP</td>
+</tr>
+</tbody></table>
+<p>Mac Absolute Time 转 Unix 的基本思路：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Unix 秒 = Mac Absolute Time + 978307200</span><br></pre></td></tr></table></figure>
+
+<p>如果时间换算后跑到 1970、2050 或明显不对，先检查单位是不是秒、毫秒、微秒、纳秒搞错了。</p>
+<h3 id="小题-8"><a href="#小题-8" class="headerlink" title="小题 8"></a>小题 8</h3><p><code>Photos.sqlite</code> 中某字段 <code>ZDATECREATED</code> 是 <code>768000000</code>，它大概率是什么时间基准？</p>
+<p>答案：Mac Absolute Time &#x2F; Cocoa 秒时间，起点是 2001-01-01 UTC。</p>
+<p>解析：照片库、Core Data 类数据库常用 Apple 2001 基准秒时间，换算 Unix 时间时加 <code>978307200</code>。</p>
+<h2 id="9-常见-iOS-题型路线图"><a href="#9-常见-iOS-题型路线图" class="headerlink" title="9. 常见 iOS 题型路线图"></a>9. 常见 iOS 题型路线图</h2><table>
+<thead>
+<tr>
+<th>题目关键词</th>
+<th>第一入口</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>设备型号、IMEI、系统版本</td>
+<td><code>Info.plist</code></td>
+</tr>
+<tr>
+<td>备份是否加密</td>
+<td><code>Manifest.plist</code></td>
+</tr>
+<tr>
+<td>备份内某文件真实文件名</td>
+<td><code>Manifest.db</code></td>
+</tr>
+<tr>
+<td>短信、iMessage</td>
+<td><code>HomeDomain:Library/SMS/sms.db</code></td>
+</tr>
+<tr>
+<td>通讯录</td>
+<td><code>HomeDomain:Library/AddressBook/AddressBook.sqlitedb</code></td>
+</tr>
+<tr>
+<td>通话记录</td>
+<td><code>HomeDomain:Library/CallHistoryDB/CallHistory.storedata</code></td>
+</tr>
+<tr>
+<td>Safari 历史</td>
+<td><code>HomeDomain:Library/Safari/History.db</code></td>
+</tr>
+<tr>
+<td>照片来源、GPS、删除、隐藏</td>
+<td><code>MediaDomain:PhotoData/Photos.sqlite</code></td>
+</tr>
+<tr>
+<td>Wi-Fi</td>
+<td><code>SystemPreferencesDomain:SystemConfiguration/com.apple.wifi.plist</code></td>
+</tr>
+<tr>
+<td>WhatsApp 群组、消息</td>
+<td><code>AppDomain</code> + <code>AppDomainGroup</code></td>
+</tr>
+<tr>
+<td>AirDrop、分享链路</td>
+<td>CoreDuet <code>interactionC.db</code></td>
+</tr>
+<tr>
+<td>应用前台使用</td>
+<td>CoreDuet <code>knowledgeC.db</code></td>
+</tr>
+<tr>
+<td>Keychain</td>
+<td><code>KeychainDomain:keychain-backup.plist</code></td>
+</tr>
+</tbody></table>
+<p>最后总结一句：<strong>iOS 取证的关键不是在一堆哈希文件里硬翻，而是先用 Manifest 建立“逻辑路径 -&gt; 真实文件”的映射，再按系统数据库、应用沙盒、AppGroup 和 CoreDuet 分层分析。</strong></p>
+
+    </div>
+    
+    
+    
+    
+    
+    
+    
+</div>
+
+            <footer id="footer">
+    <div id="footer-wrap">
+        <div>
+            &copy;
+            2025 - 2026 Yin&#39;s Blog
+            <span id="footer-icon">
+                <i class="fa-solid fa-font-awesome fa-fw"></i>
+            </span>
+            &commat;Yin
+        </div>
+        <div>
+            Based on the <a target="_blank" rel="noopener" href="https://hexo.io">Hexo Engine</a> &amp;
+            <a target="_blank" rel="noopener" href="https://github.com/theme-particlex/hexo-theme-particlex">ParticleX Theme</a>
+        </div>
+        
+    </div>
+</footer>
+
+        </div>
+        
+        <transition name="fade">
+            <div id="preview" ref="preview" v-show="previewShow">
+                <img id="preview-content" ref="previewContent" />
+            </div>
+        </transition>
+        
+    </div>
+    <script src="/js/main.js"></script>
+    
+    
+
+
+
+
+    
+</body>
+</html>

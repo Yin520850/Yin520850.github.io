@@ -1,0 +1,912 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>电子取证——Android文件系统结构 | Yin&#39;s Blog</title>
+    <meta name="author" content="Yin" />
+    <meta name="description" content="一个热爱技术的开发者的个人博客，分享编程心得和生活感悟" />
+    <meta name="keywords" content="hexo,blog,技术博客,编程,开发" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+    />
+    <link rel="icon" href="/images/avatar.jpg" />
+    <link rel="preconnect" href="https://s4.zstatic.net" />
+<script src="https://s4.zstatic.net/ajax/libs/vue/3.3.7/vue.global.prod.min.js"></script>
+<link rel="stylesheet" href="https://s4.zstatic.net/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.cn" />
+<link rel="preconnect" href="https://fonts.gstatic.cn" crossorigin />
+<link
+    rel="stylesheet"
+    href="https://fonts.googleapis.cn/css2?family=Fira+Code:wght@400;500;600;700&family=Lexend:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;600;700;800;900&display=swap"
+/>
+<script> const mixins = {}; </script>
+
+<script src="https://polyfill.alicdn.com/v3/polyfill.min.js?features=default"></script>
+
+
+
+
+<script src="/js/lib/preview.js"></script>
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/css/main.css" />
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+<body>
+    <div id="layout">
+        <transition name="fade">
+            <div id="loading" v-show="loading">
+                <div id="loading-circle">
+                    <h2>LOADING</h2>
+                    <p>加载过慢请开启缓存 浏览器默认开启</p>
+                    <img src="/images/loading.gif" />
+                </div>
+            </div>
+        </transition>
+        <div id="menu" :class="{ hidden: hiddenMenu, 'menu-color': menuColor}">
+    <nav id="desktop-menu">
+        <a class="title" href="/">
+            <span>YIN&#39;S BLOG</span>
+        </a>
+        
+        <a href="/">
+            <i class="fa-solid fa-house fa-fw"></i>
+            <span>&ensp;Home</span>
+        </a>
+        
+        <a href="/about">
+            <i class="fa-solid fa-id-card fa-fw"></i>
+            <span>&ensp;About</span>
+        </a>
+        
+        <a href="/archives">
+            <i class="fa-solid fa-box-archive fa-fw"></i>
+            <span>&ensp;Archives</span>
+        </a>
+        
+        <a href="/categories">
+            <i class="fa-solid fa-bookmark fa-fw"></i>
+            <span>&ensp;Categories</span>
+        </a>
+        
+        <a href="/tags">
+            <i class="fa-solid fa-tags fa-fw"></i>
+            <span>&ensp;Tags</span>
+        </a>
+        
+    </nav>
+    <nav id="mobile-menu">
+        <div class="title" @click="showMenuItems = !showMenuItems">
+            <i class="fa-solid fa-bars fa-fw"></i>
+            <span>&emsp;YIN&#39;S BLOG</span>
+        </div>
+        <transition name="slide">
+            <div class="items" v-show="showMenuItems">
+                
+                <a href="/">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-house fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Home</div>
+                    </div>
+                </a>
+                
+                <a href="/about">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-id-card fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">About</div>
+                    </div>
+                </a>
+                
+                <a href="/archives">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-box-archive fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Archives</div>
+                    </div>
+                </a>
+                
+                <a href="/categories">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-bookmark fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Categories</div>
+                    </div>
+                </a>
+                
+                <a href="/tags">
+                    <div class="item">
+                        <div style="min-width: 20px; max-width: 50px; width: 10%">
+                            <i class="fa-solid fa-tags fa-fw"></i>
+                        </div>
+                        <div style="min-width: 100px; max-width: 150%; width: 20%">Tags</div>
+                    </div>
+                </a>
+                
+            </div>
+        </transition>
+    </nav>
+</div>
+<transition name="fade">
+    <div id="menu-curtain" @click="showMenuItems = !showMenuItems" v-show="showMenuItems"></div>
+</transition>
+
+        <div id="main" :class="loading ? 'into-enter-from': 'into-enter-active'">
+            <div class="article">
+    <div>
+        <h1>电子取证——Android文件系统结构</h1>
+    </div>
+    <div class="info">
+        
+        <span class="category">
+            <a href="/categories/%E7%94%B5%E5%AD%90%E5%8F%96%E8%AF%81/">
+                <span class="icon">
+                    <i class="fa-solid fa-bookmark fa-fw"></i>
+                </span>
+                电子取证
+            </a>
+        </span>
+        
+        
+        <span class="tags">
+            <span class="icon">
+                <i class="fa-solid fa-tags fa-fw"></i>
+            </span>
+            
+            
+            <span class="tag">
+                
+                <a href="/tags/%E7%94%B5%E5%AD%90%E5%8F%96%E8%AF%81/" style="color: #ffa2c4">
+                    电子取证
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" style="color: #00bcd4">
+                    文件系统
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/%E6%89%8B%E6%9C%BA%E5%8F%96%E8%AF%81/" style="color: #ff7d73">
+                    手机取证
+                </a>
+            </span>
+            
+            <span class="tag">
+                
+                <a href="/tags/Android/" style="color: #00a596">
+                    Android
+                </a>
+            </span>
+            
+        </span>
+        
+    </div>
+    
+    <div class="content" v-pre>
+        <blockquote>
+<p>Android 取证的第一步不是急着逆向 APK，而是先知道数据会落在哪里。很多比赛题问账号、时间、Wi-Fi、聊天、照片、安装记录，本质上都是在问：你知不知道应该去哪个目录找。</p>
+</blockquote>
+<p>这篇文章从取证角度认识 Android 文件系统结构。我们不追求把 Linux&#x2F;Android 内核讲完，而是先建立一张“看到题目就知道去哪找”的地图。每一部分后面都配几道小题，方便把路径和题型对应起来。</p>
+<h2 id="1-Android-取证先看什么"><a href="#1-Android-取证先看什么" class="headerlink" title="1. Android 取证先看什么"></a>1. Android 取证先看什么</h2><p>拿到 Android 检材后，先判断它属于哪一类：</p>
+<table>
+<thead>
+<tr>
+<th>检材形态</th>
+<th>常见内容</th>
+<th>第一反应</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>整机镜像</td>
+<td><code>system</code>、<code>vendor</code>、<code>userdata</code> 等分区</td>
+<td>重点看 <code>/data</code>，再看系统分区补设备信息</td>
+</tr>
+<tr>
+<td>应用数据导出</td>
+<td>某个包名目录</td>
+<td>先看 <code>shared_prefs</code> 和 <code>databases</code></td>
+</tr>
+<tr>
+<td>APK 文件</td>
+<td><code>AndroidManifest.xml</code>、<code>classes.dex</code></td>
+<td>先看权限、包名、入口、硬编码配置</td>
+</tr>
+<tr>
+<td>备份文件</td>
+<td><code>.ab</code>、厂商备份、手机助手备份</td>
+<td>先解包，再还原应用目录结构</td>
+</tr>
+<tr>
+<td>模拟器&#x2F;虚拟机</td>
+<td><code>vmdk</code>、<code>osimg</code>、<code>data.vmdk</code></td>
+<td>当成第二台 Android 来看</td>
+</tr>
+</tbody></table>
+<p>Android 题最常用的排查顺序是：</p>
+<ol>
+<li>问账号、登录状态、配置、token：先看 <code>shared_prefs</code>。</li>
+<li>问聊天、记录、历史、业务数据：先看 <code>databases</code>。</li>
+<li>问附件、图片、导出文件：看 <code>files</code>、<code>cache</code> 和外部存储。</li>
+<li>问装没装、版本、安装时间：看 <code>/data/system/packages.xml</code>。</li>
+<li>问 Wi-Fi：看 <code>/data/misc/wifi/WifiConfigStore.xml</code>。</li>
+<li>问恶意行为、权限、C2：再看 APK 的 Manifest 和代码。</li>
+</ol>
+<h3 id="小题-1"><a href="#小题-1" class="headerlink" title="小题 1"></a>小题 1</h3><p>题目问“某 APP 的登录账号和 token 是什么”，你已经知道包名是 <code>com.example.chat</code>，第一步最应该看哪里？</p>
+<p>答案：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">/data/data/com.example.chat/shared_prefs/</span><br></pre></td></tr></table></figure>
+
+<p>解析：账号、token、登录状态、设备 ID 这类轻量配置，经常保存在 SharedPreferences XML 中。不要一上来逆向 APK。</p>
+<h2 id="2-Android-分区和-data-的意义"><a href="#2-Android-分区和-data-的意义" class="headerlink" title="2. Android 分区和 /data 的意义"></a>2. Android 分区和 <code>/data</code> 的意义</h2><p>Android 底层分区很多，但取证入门先记住这些：</p>
+<table>
+<thead>
+<tr>
+<th>分区&#x2F;挂载点</th>
+<th>常见文件系统</th>
+<th>取证意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>boot</code></td>
+<td>ramdisk</td>
+<td>内核和启动 ramdisk</td>
+</tr>
+<tr>
+<td><code>recovery</code></td>
+<td>ramdisk</td>
+<td>恢复模式</td>
+</tr>
+<tr>
+<td><code>/system</code></td>
+<td>EXT4 &#x2F; EROFS</td>
+<td>系统应用、系统框架，通常只读</td>
+</tr>
+<tr>
+<td><code>/vendor</code></td>
+<td>EXT4 &#x2F; EROFS</td>
+<td>厂商 HAL、驱动相关组件</td>
+</tr>
+<tr>
+<td><code>/product</code></td>
+<td>EXT4 &#x2F; EROFS</td>
+<td>产品级系统应用和配置</td>
+</tr>
+<tr>
+<td><code>/data</code></td>
+<td>EXT4 &#x2F; F2FS</td>
+<td>用户数据，取证核心</td>
+</tr>
+<tr>
+<td><code>/cache</code></td>
+<td>EXT4</td>
+<td>OTA、缓存，旧设备更常见</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>EXT4</td>
+<td>加密元数据</td>
+</tr>
+<tr>
+<td><code>super</code></td>
+<td>动态分区容器</td>
+<td>Android 10+ 动态分区，把 system&#x2F;vendor&#x2F;product 等逻辑分区放进去</td>
+</tr>
+</tbody></table>
+<p>从取证角度看，<code>/system</code> 告诉你系统有什么，<code>/data</code> 告诉你用户做过什么。绝大多数用户行为痕迹都在 <code>/data</code>。</p>
+<p>现代 Android 的 <code>/data</code> 常见文件系统是 EXT4 或 F2FS。F2FS 是为闪存优化的日志结构文件系统，很多手机的 userdata 会使用它。文件系统层面的删除恢复、时间戳、元数据分析会受文件系统影响，但比赛中更多时候是直接在解析出的目录和数据库里找证据。</p>
+<h3 id="data-下最重要的几类目录"><a href="#data-下最重要的几类目录" class="headerlink" title="/data 下最重要的几类目录"></a><code>/data</code> 下最重要的几类目录</h3><table>
+<thead>
+<tr>
+<th>路径</th>
+<th>意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/data/data/&lt;package&gt;/</code></td>
+<td>应用私有数据，旧写法和常见展示路径</td>
+</tr>
+<tr>
+<td><code>/data/user/0/&lt;package&gt;/</code></td>
+<td>主用户空间的应用私有数据，常与 <code>/data/data</code> 对应</td>
+</tr>
+<tr>
+<td><code>/data/user_de/0/&lt;package&gt;/</code></td>
+<td>Device Encrypted 数据，开机未解锁前也可用的一部分数据</td>
+</tr>
+<tr>
+<td><code>/data/system/</code></td>
+<td>系统配置、账号、安装信息、锁屏、使用记录</td>
+</tr>
+<tr>
+<td><code>/data/misc/</code></td>
+<td>Wi-Fi、蓝牙、系统杂项配置</td>
+</tr>
+<tr>
+<td><code>/data/media/0/</code></td>
+<td>用户外部存储，等价于常见的 <code>/sdcard</code></td>
+</tr>
+</tbody></table>
+<p><code>/data/data</code> 和 <code>/data/user/0</code> 的关系很容易混淆。现在很多系统里 <code>/data/data</code> 可以理解为指向主用户 <code>0</code> 的兼容入口，而多用户、分身空间可能出现在 <code>/data/user/10</code>、<code>/data/user/999</code> 等路径。</p>
+<h3 id="小题-2"><a href="#小题-2" class="headerlink" title="小题 2"></a>小题 2</h3><p>题目问“一台 Android 手机是否存在分身空间，某 APP 是否也在分身空间中安装过”，除了 <code>/data/user/0</code>，还应该注意哪些路径？</p>
+<p>答案：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">/data/user/10/</span><br><span class="line">/data/user/999/</span><br><span class="line">其他非 0 的 /data/user/&lt;userId&gt;/ 目录</span><br></pre></td></tr></table></figure>
+
+<p>解析：主空间是 user 0，分身、工作资料、厂商隐私空间经常使用其他 userId。只看 <code>/data/data</code> 或 <code>/data/user/0</code> 会漏证据。</p>
+<h2 id="3-应用私有目录四件套"><a href="#3-应用私有目录四件套" class="headerlink" title="3. 应用私有目录四件套"></a>3. 应用私有目录四件套</h2><p>Android 应用最核心的目录是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">/data/data/&lt;package&gt;/</span><br></pre></td></tr></table></figure>
+
+<p>或者：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">/data/user/0/&lt;package&gt;/</span><br></pre></td></tr></table></figure>
+
+<p>里面最常见的四个子目录是：</p>
+<table>
+<thead>
+<tr>
+<th>子目录</th>
+<th>取证意义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>shared_prefs/</code></td>
+<td>XML 键值配置，账号、token、开关、时间、设备 ID 高频出现</td>
+</tr>
+<tr>
+<td><code>databases/</code></td>
+<td>SQLite 数据库，聊天、历史、业务数据高频出现</td>
+</tr>
+<tr>
+<td><code>files/</code></td>
+<td>应用保存的普通文件、附件、导出文件、密钥文件</td>
+</tr>
+<tr>
+<td><code>cache/</code></td>
+<td>缓存图片、临时文件、接口缓存，有时能恢复已删除内容</td>
+</tr>
+</tbody></table>
+<h3 id="shared-prefs"><a href="#shared-prefs" class="headerlink" title="shared_prefs"></a><code>shared_prefs</code></h3><p>SharedPreferences 是 Android 应用最常见的键值存储。文件通常是 XML：</p>
+<figure class="highlight xml"><table><tr><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">map</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">string</span> <span class="attr">name</span>=<span class="string">&quot;username&quot;</span>&gt;</span>alice<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">string</span> <span class="attr">name</span>=<span class="string">&quot;token&quot;</span>&gt;</span>eyJ...<span class="tag">&lt;/<span class="name">string</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">boolean</span> <span class="attr">name</span>=<span class="string">&quot;is_logged_in&quot;</span> <span class="attr">value</span>=<span class="string">&quot;true&quot;</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">long</span> <span class="attr">name</span>=<span class="string">&quot;last_login_at&quot;</span> <span class="attr">value</span>=<span class="string">&quot;1744796769000&quot;</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">map</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>常见 key：</p>
+<table>
+<thead>
+<tr>
+<th>key 形态</th>
+<th>常见含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>username</code>、<code>account</code>、<code>phone</code>、<code>email</code></td>
+<td>账号</td>
+</tr>
+<tr>
+<td><code>uid</code>、<code>user_id</code>、<code>member_id</code></td>
+<td>用户 ID</td>
+</tr>
+<tr>
+<td><code>token</code>、<code>session</code>、<code>auth</code></td>
+<td>登录凭据</td>
+</tr>
+<tr>
+<td><code>device_id</code>、<code>android_id</code>、<code>did</code></td>
+<td>设备 ID</td>
+</tr>
+<tr>
+<td><code>last_login_at</code>、<code>create_time</code>、<code>timestamp</code></td>
+<td>时间</td>
+</tr>
+<tr>
+<td><code>db_password</code>、<code>key_iterations</code></td>
+<td>数据库或加密参数</td>
+</tr>
+</tbody></table>
+<p>读 SharedPreferences 时不要只看 value，先看 key 名。很多题的答案就藏在 key 的语义里。</p>
+<h3 id="databases"><a href="#databases" class="headerlink" title="databases"></a><code>databases</code></h3><p>Android 应用大量使用 SQLite。常见文件形式：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">main.db</span><br><span class="line">main.db-wal</span><br><span class="line">main.db-shm</span><br></pre></td></tr></table></figure>
+
+<p><code>-wal</code> 是 Write-Ahead Log，可能保存尚未合并进主库的新记录，也可能残留旧版本页面。取证导出数据库时，最好把 <code>.db</code>、<code>.db-wal</code>、<code>.db-shm</code> 一起导出，否则可能看到的记录不完整。</p>
+<h3 id="files-和-cache"><a href="#files-和-cache" class="headerlink" title="files 和 cache"></a><code>files</code> 和 <code>cache</code></h3><p><code>files/</code> 常见业务文件、附件、密钥、导出内容。<code>cache/</code> 常见缓存图、头像、缩略图、接口响应。不要因为叫 cache 就忽略它，很多“原图删除但缩略图还在”的题都靠缓存拿分。</p>
+<h3 id="小题-3"><a href="#小题-3" class="headerlink" title="小题 3"></a>小题 3</h3><p>你在 <code>databases/</code> 里看到：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">chat.db</span><br><span class="line">chat.db-wal</span><br><span class="line">chat.db-shm</span><br></pre></td></tr></table></figure>
+
+<p>只导出 <code>chat.db</code> 分析是否稳妥？</p>
+<p>答案：不稳妥。应同时导出 <code>chat.db</code>、<code>chat.db-wal</code>、<code>chat.db-shm</code>。</p>
+<p>解析：Android SQLite 常用 WAL 模式，新记录可能还在 WAL 文件中。只看主库可能漏掉最新聊天或状态变化。</p>
+<h2 id="4-系统级关键路径"><a href="#4-系统级关键路径" class="headerlink" title="4. 系统级关键路径"></a>4. 系统级关键路径</h2><p>应用目录解决的是单个 APP 的行为，系统级目录解决的是“这台手机本身”的问题。</p>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>内容</th>
+<th>常见题型</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/data/system/packages.xml</code></td>
+<td>已安装应用、版本、路径、签名、时间字段</td>
+<td>APP 是否安装、版本、更新时间</td>
+</tr>
+<tr>
+<td><code>/data/system/packages.list</code></td>
+<td>包名与 UID 映射</td>
+<td>目录属主、权限关联</td>
+</tr>
+<tr>
+<td><code>/data/system/users/0/settings_secure.xml</code></td>
+<td>Android ID 等安全设置</td>
+<td>设备标识、派生密钥</td>
+</tr>
+<tr>
+<td><code>/data/system/users/0/accounts.db</code></td>
+<td>系统账户</td>
+<td>Google、微信、QQ、邮箱账户</td>
+</tr>
+<tr>
+<td><code>/data/system/usagestats/0/</code></td>
+<td>应用使用统计</td>
+<td>APP 使用时间、前台行为</td>
+</tr>
+<tr>
+<td><code>/data/system/notification_log.db</code></td>
+<td>通知记录，视系统而定</td>
+<td>收到过什么通知</td>
+</tr>
+<tr>
+<td><code>/data/system/gatekeeper.pattern.key</code></td>
+<td>图案锁相关</td>
+<td>锁屏破解</td>
+</tr>
+<tr>
+<td><code>/data/system/gatekeeper.password.key</code></td>
+<td>密码锁相关</td>
+<td>锁屏破解</td>
+</tr>
+<tr>
+<td><code>/data/system/device_policy.xml</code></td>
+<td>设备策略</td>
+<td>密码复杂度、长度约束</td>
+</tr>
+</tbody></table>
+<h3 id="packages-xml"><a href="#packages-xml" class="headerlink" title="packages.xml"></a><code>packages.xml</code></h3><p><code>packages.xml</code> 是比赛里非常常见的系统文件。高频字段包括：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>name</code></td>
+<td>包名</td>
+</tr>
+<tr>
+<td><code>codePath</code></td>
+<td>APK 安装路径</td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td>versionCode 或版本相关值</td>
+</tr>
+<tr>
+<td><code>userId</code></td>
+<td>系统分配 UID</td>
+</tr>
+<tr>
+<td><code>ut</code></td>
+<td>常用于最后更新时间</td>
+</tr>
+<tr>
+<td><code>ft</code> &#x2F; <code>it</code></td>
+<td>常与首次安装、首次扫描或文件时间相关，需要交叉验证</td>
+</tr>
+<tr>
+<td><code>&lt;sigs&gt;</code> &#x2F; <code>&lt;cert&gt;</code></td>
+<td>签名证书信息</td>
+</tr>
+</tbody></table>
+<p>不要机械认为 <code>ft</code>、<code>it</code> 在所有 Android 版本里含义完全一致。比赛中如果问安装时间，最好用取证工具解析结果、APK 文件时间、包管理记录一起验证。</p>
+<h3 id="系统账户"><a href="#系统账户" class="headerlink" title="系统账户"></a>系统账户</h3><p>账户数据库常见位置：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">/data/system/users/0/accounts.db</span><br></pre></td></tr></table></figure>
+
+<p>常见 <code>type</code>：</p>
+<table>
+<thead>
+<tr>
+<th>type</th>
+<th>服务</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>com.google</code></td>
+<td>Google 账户</td>
+</tr>
+<tr>
+<td><code>com.tencent.mm</code></td>
+<td>微信</td>
+</tr>
+<tr>
+<td><code>com.tencent.mobileqq</code></td>
+<td>QQ</td>
+</tr>
+<tr>
+<td><code>com.xiaomi</code></td>
+<td>小米</td>
+</tr>
+<tr>
+<td><code>com.whatsapp</code></td>
+<td>WhatsApp</td>
+</tr>
+<tr>
+<td><code>org.telegram.messenger</code></td>
+<td>Telegram</td>
+</tr>
+</tbody></table>
+<h3 id="小题-4"><a href="#小题-4" class="headerlink" title="小题 4"></a>小题 4</h3><p>题目问“某 APP 的版本号和最后更新时间是什么”，最优先看的系统文件是哪一个？</p>
+<p>答案：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">/data/system/packages.xml</span><br></pre></td></tr></table></figure>
+
+<p>解析：<code>packages.xml</code> 记录包名、安装路径、版本、更新时间、签名等信息，是安装类题目的第一入口。</p>
+<h2 id="5-Wi-Fi、蓝牙和设备标识"><a href="#5-Wi-Fi、蓝牙和设备标识" class="headerlink" title="5. Wi-Fi、蓝牙和设备标识"></a>5. Wi-Fi、蓝牙和设备标识</h2><p>Android Wi-Fi 记录常见位置：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">/data/misc/wifi/WifiConfigStore.xml</span><br><span class="line">/data/misc/apexdata/com.android.wifi/WifiConfigStore.xml</span><br></pre></td></tr></table></figure>
+
+<p>不同版本路径可能变化，但文件名经常仍是 <code>WifiConfigStore.xml</code>。</p>
+<p>常见字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>SSID</code></td>
+<td>Wi-Fi 名称</td>
+</tr>
+<tr>
+<td><code>BSSID</code></td>
+<td>接入点 MAC 地址</td>
+</tr>
+<tr>
+<td><code>PreSharedKey</code></td>
+<td>Wi-Fi 密码或密钥表示</td>
+</tr>
+<tr>
+<td><code>HiddenSSID</code></td>
+<td>是否隐藏网络</td>
+</tr>
+<tr>
+<td><code>NumAssociation</code></td>
+<td>连接&#x2F;关联次数</td>
+</tr>
+<tr>
+<td><code>CreatorUid</code></td>
+<td>创建该配置的 UID</td>
+</tr>
+<tr>
+<td><code>IpAssignment</code></td>
+<td>DHCP 或 STATIC</td>
+</tr>
+<tr>
+<td><code>ProxySettings</code></td>
+<td>代理设置</td>
+</tr>
+<tr>
+<td><code>RandomizedMacAddress</code></td>
+<td>随机 MAC</td>
+</tr>
+</tbody></table>
+<p>注意：<code>BSSID</code> 是路由器&#x2F;AP 的 MAC，不是手机自己的 MAC。很多初学者会把这两个搞混。</p>
+<p>蓝牙配置常见在：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">/data/misc/bluedroid/bt_config.conf</span><br></pre></td></tr></table></figure>
+
+<p>有些系统还会在数据库或 XML 中保存已配对设备、设备名、MAC 等。</p>
+<h3 id="小题-5"><a href="#小题-5" class="headerlink" title="小题 5"></a>小题 5</h3><p>题目问“手机连接过的 Wi-Fi 接入点 MAC 地址是什么”，应该优先看 <code>SSID</code> 还是 <code>BSSID</code>？</p>
+<p>答案：<code>BSSID</code></p>
+<p>解析：<code>SSID</code> 是 Wi-Fi 名称，<code>BSSID</code> 才是具体接入点的 MAC 地址。一个 SSID 可以对应多个 BSSID。</p>
+<h2 id="6-媒体、下载和外部存储"><a href="#6-媒体、下载和外部存储" class="headerlink" title="6. 媒体、下载和外部存储"></a>6. 媒体、下载和外部存储</h2><p>普通用户看到的“内部存储”通常对应：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">/sdcard/</span><br><span class="line">/storage/emulated/0/</span><br><span class="line">/data/media/0/</span><br></pre></td></tr></table></figure>
+
+<p>常见目录：</p>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>/sdcard/DCIM/</code></td>
+<td>相机照片、视频</td>
+</tr>
+<tr>
+<td><code>/sdcard/Pictures/</code></td>
+<td>图片、截图、应用保存图</td>
+</tr>
+<tr>
+<td><code>/sdcard/Download/</code></td>
+<td>下载文件</td>
+</tr>
+<tr>
+<td><code>/sdcard/Android/data/&lt;package&gt;/</code></td>
+<td>应用外部私有目录</td>
+</tr>
+<tr>
+<td><code>/sdcard/Android/media/&lt;package&gt;/</code></td>
+<td>新版本常见媒体共享目录</td>
+</tr>
+</tbody></table>
+<p>媒体数据库也很重要：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">/data/data/com.android.providers.media/databases/external.db</span><br><span class="line">/data/data/com.android.providers.media.module/databases/external.db</span><br></pre></td></tr></table></figure>
+
+<p>高频字段：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>_data</code></td>
+<td>文件完整路径，旧版本更常见</td>
+</tr>
+<tr>
+<td><code>_display_name</code></td>
+<td>显示文件名</td>
+</tr>
+<tr>
+<td><code>relative_path</code></td>
+<td>相对路径，新版本更常见</td>
+</tr>
+<tr>
+<td><code>date_added</code></td>
+<td>加入媒体库时间，Unix 秒</td>
+</tr>
+<tr>
+<td><code>date_modified</code></td>
+<td>修改时间</td>
+</tr>
+<tr>
+<td><code>mime_type</code></td>
+<td>MIME 类型</td>
+</tr>
+<tr>
+<td><code>latitude</code> &#x2F; <code>longitude</code></td>
+<td>GPS</td>
+</tr>
+<tr>
+<td><code>is_trashed</code></td>
+<td>是否在回收站</td>
+</tr>
+</tbody></table>
+<p>相册题不能只看 DCIM。应用私有图片、缓存图、缩略图经常出现在：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">/sdcard/Android/data/&lt;package&gt;/</span><br><span class="line">/data/data/&lt;package&gt;/cache/</span><br><span class="line">/data/data/&lt;package&gt;/files/</span><br></pre></td></tr></table></figure>
+
+<h3 id="小题-6"><a href="#小题-6" class="headerlink" title="小题 6"></a>小题 6</h3><p>原图在相册里找不到，但题目提示某 APP 曾经显示过这张图，你还可以去哪里找？</p>
+<p>答案示例：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">/data/data/&lt;package&gt;/cache/</span><br><span class="line">/data/data/&lt;package&gt;/files/</span><br><span class="line">/sdcard/Android/data/&lt;package&gt;/</span><br><span class="line">媒体缩略图缓存目录</span><br></pre></td></tr></table></figure>
+
+<p>解析：很多 APP 会缓存图片、头像、缩略图。原图删除不代表缓存一定同步删除。</p>
+<h2 id="7-常见应用路径举例"><a href="#7-常见应用路径举例" class="headerlink" title="7. 常见应用路径举例"></a>7. 常见应用路径举例</h2><p>不同 APP 路径不同，但思路相同：先用包名定位应用目录，再按四件套看。</p>
+<table>
+<thead>
+<tr>
+<th>应用&#x2F;场景</th>
+<th>常见路径</th>
+<th>取证点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>微信</td>
+<td><code>/data/data/com.tencent.mm/MicroMsg/&lt;hash&gt;/EnMicroMsg.db</code></td>
+<td>聊天记录，常需解密</td>
+</tr>
+<tr>
+<td>微信配置</td>
+<td><code>/data/data/com.tencent.mm/shared_prefs/auth_info_key_prefs.xml</code></td>
+<td>UIN、解密线索</td>
+</tr>
+<tr>
+<td>Chrome</td>
+<td><code>/data/data/com.android.chrome/app_chrome/Default/History</code></td>
+<td>浏览历史、下载</td>
+</tr>
+<tr>
+<td>WebView</td>
+<td><code>/data/data/&lt;pkg&gt;/app_webview/Default/History</code></td>
+<td>应用内网页访问</td>
+</tr>
+<tr>
+<td>小米智能家庭</td>
+<td><code>/data/data/com.xiaomi.smarthome/</code></td>
+<td>家庭、房间、设备 DID</td>
+</tr>
+<tr>
+<td>Telegram</td>
+<td><code>/data/data/org.telegram.messenger/</code></td>
+<td>账号、缓存、数据库</td>
+</tr>
+<tr>
+<td>WhatsApp</td>
+<td><code>/data/data/com.whatsapp/</code></td>
+<td>消息、媒体、群组</td>
+</tr>
+<tr>
+<td>Termux</td>
+<td><code>/data/data/com.termux/files/</code></td>
+<td>Linux 环境、脚本、命令痕迹</td>
+</tr>
+<tr>
+<td>VMOS</td>
+<td><code>/sdcard/Android/data/com.VMOS.pro/osimg/</code></td>
+<td>虚拟 Android 系统</td>
+</tr>
+</tbody></table>
+<p>微信数据库经常要用 UIN 和设备信息派生密钥；Chrome&#x2F;Chromium 时间戳常是从 1601 年开始的 WebKit 微秒；Android 普通业务时间戳常是 Unix 秒或毫秒。</p>
+<h3 id="小题-7"><a href="#小题-7" class="headerlink" title="小题 7"></a>小题 7</h3><p>一个 Android 时间字段值是 <code>1744796769000</code>，它大概率是什么单位？</p>
+<p>答案：Unix 毫秒时间戳。</p>
+<p>解析：13 位整数通常是毫秒。换算时要除以 1000；如果直接当秒，会得到明显离谱的未来时间。</p>
+<h2 id="8-APK-什么时候看"><a href="#8-APK-什么时候看" class="headerlink" title="8. APK 什么时候看"></a>8. APK 什么时候看</h2><p>APK 不是不能看，而是要在合适的时候看。</p>
+<p>APK 本质是 ZIP，常见结构：</p>
+<table>
+<thead>
+<tr>
+<th>文件&#x2F;目录</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>AndroidManifest.xml</code></td>
+<td>包名、权限、组件、入口</td>
+</tr>
+<tr>
+<td><code>classes.dex</code></td>
+<td>Dalvik 字节码</td>
+</tr>
+<tr>
+<td><code>resources.arsc</code></td>
+<td>编译后资源表</td>
+</tr>
+<tr>
+<td><code>res/</code></td>
+<td>资源</td>
+</tr>
+<tr>
+<td><code>assets/</code></td>
+<td>原始资产</td>
+</tr>
+<tr>
+<td><code>lib/</code></td>
+<td>native so 库</td>
+</tr>
+<tr>
+<td><code>META-INF/</code></td>
+<td>旧版签名信息</td>
+</tr>
+</tbody></table>
+<p>适合看 APK 的题：</p>
+<ol>
+<li>问包名、应用名、权限、入口 Activity；</li>
+<li>问 C2、Webhook、硬编码密钥；</li>
+<li>问加密算法、数据库密码如何派生；</li>
+<li>问恶意行为、后台服务、广播接收器；</li>
+<li>问 Flutter、React Native、壳或 native 库。</li>
+</ol>
+<p>但如果题目问登录账号、聊天记录、安装时间，通常先看本地数据，不要先逆向。</p>
+<h3 id="小题-8"><a href="#小题-8" class="headerlink" title="小题 8"></a>小题 8</h3><p>题目问“这个 APP 是否申请了读取短信权限”，应该看应用数据目录还是 APK？</p>
+<p>答案：看 APK 的 <code>AndroidManifest.xml</code>。</p>
+<p>解析：权限声明在 Manifest 中；应用数据目录更适合找用户数据和运行痕迹。</p>
+<h2 id="9-做-Android-题的路线图"><a href="#9-做-Android-题的路线图" class="headerlink" title="9. 做 Android 题的路线图"></a>9. 做 Android 题的路线图</h2><p>最后整理成一张路线图：</p>
+<table>
+<thead>
+<tr>
+<th>题目关键词</th>
+<th>第一入口</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>账号、token、登录状态</td>
+<td><code>shared_prefs/</code></td>
+</tr>
+<tr>
+<td>聊天、历史、业务记录</td>
+<td><code>databases/</code></td>
+</tr>
+<tr>
+<td>图片、附件、缓存</td>
+<td><code>files/</code>、<code>cache/</code>、<code>/sdcard/Android/data/</code></td>
+</tr>
+<tr>
+<td>APP 版本、安装时间</td>
+<td><code>/data/system/packages.xml</code></td>
+</tr>
+<tr>
+<td>Wi-Fi 名称、BSSID、密码</td>
+<td><code>WifiConfigStore.xml</code></td>
+</tr>
+<tr>
+<td>Android ID</td>
+<td><code>settings_secure.xml</code></td>
+</tr>
+<tr>
+<td>系统账户</td>
+<td><code>accounts.db</code></td>
+</tr>
+<tr>
+<td>浏览器历史</td>
+<td>Chrome&#x2F;WebView <code>History</code></td>
+</tr>
+<tr>
+<td>权限、C2、硬编码密钥</td>
+<td>APK Manifest、DEX、assets、lib</td>
+</tr>
+<tr>
+<td>分身&#x2F;虚拟机</td>
+<td><code>/data/user/&lt;非0&gt;/</code>、VMOS&#x2F;Nox&#x2F;雷电镜像</td>
+</tr>
+</tbody></table>
+<p>一句话总结：<strong>Android 取证不是背一个万能路径，而是根据题目类型判断数据层级：系统级、应用级、媒体级、还是 APK 代码级。</strong></p>
+
+    </div>
+    
+    
+    
+    
+    
+    
+    
+</div>
+
+            <footer id="footer">
+    <div id="footer-wrap">
+        <div>
+            &copy;
+            2025 - 2026 Yin&#39;s Blog
+            <span id="footer-icon">
+                <i class="fa-solid fa-font-awesome fa-fw"></i>
+            </span>
+            &commat;Yin
+        </div>
+        <div>
+            Based on the <a target="_blank" rel="noopener" href="https://hexo.io">Hexo Engine</a> &amp;
+            <a target="_blank" rel="noopener" href="https://github.com/theme-particlex/hexo-theme-particlex">ParticleX Theme</a>
+        </div>
+        
+    </div>
+</footer>
+
+        </div>
+        
+        <transition name="fade">
+            <div id="preview" ref="preview" v-show="previewShow">
+                <img id="preview-content" ref="previewContent" />
+            </div>
+        </transition>
+        
+    </div>
+    <script src="/js/main.js"></script>
+    
+    
+
+
+
+
+    
+</body>
+</html>
