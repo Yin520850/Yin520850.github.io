@@ -35,7 +35,9 @@
 #archives .tags .tag,
 .article .info .category,
 .article .info .tags,
-.article .info .tags .tag {
+.article .info .tags .tag,
+.article .info .page-view,
+#footer .site-stat {
     display: inline-block;
     margin-right: 10px;
 }
@@ -77,6 +79,16 @@
 }
 #footer #footer-wrap div {
     margin: 15px;
+}
+#footer .site-stats {
+    color: #5c6b72;
+}
+#footer .site-stat i,
+.article .info .page-view .icon {
+    color: #66afef;
+}
+.article .info .page-view {
+    color: #5c6b72;
 }
 #home-card {
     width: 300px;
