@@ -187,21 +187,21 @@
             
             <span class="tag">
                 
-                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #ffa2c4">
+                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #ff7d73">
                     密码学
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/%E5%8F%A3%E4%BB%A4%E5%AE%89%E5%85%A8/" style="color: #ff7d73">
+                <a href="/tags/%E5%8F%A3%E4%BB%A4%E5%AE%89%E5%85%A8/" style="color: #00bcd4">
                     口令安全
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/PBKDF2/" style="color: #03a9f4">
+                <a href="/tags/PBKDF2/" style="color: #ffa2c4">
                     PBKDF2
                 </a>
             </span>
@@ -219,144 +219,146 @@
     </div>
     
     <div class="content" v-pre>
-        <h1 id="口令存储为什么要加盐和慢哈希"><a href="#口令存储为什么要加盐和慢哈希" class="headerlink" title="口令存储为什么要加盐和慢哈希"></a>口令存储为什么要加盐和慢哈希</h1><p>这篇文章写一个很常见、也很容易写错的问题：用户口令到底应该怎么存。</p>
-<p>很多初学者会写成这样：</p>
+        <h1 id="口令存储为什么要加盐和慢哈希"><a href="#口令存储为什么要加盐和慢哈希" class="headerlink" title="口令存储为什么要加盐和慢哈希"></a>口令存储为什么要加盐和慢哈希</h1><p>这篇文章写一个和密码实验直接相关、也很常见的安全问题：用户口令到底应该怎么存。</p>
+<p>很多初学者会觉得：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">password -&gt; SHA256 -&gt; 存数据库</span><br></pre></td></tr></table></figure>
 
-<p>这比明文存储好一点，但仍然不够安全。原因是普通哈希太快、结果确定、容易被字典和泄露库批量攻击。</p>
-<p>更合理的做法是：</p>
+<p>这样已经不是明文，应该安全了。但在真实系统里，这还不够。原因是普通哈希太快、结果确定，一旦数据库泄露，攻击者可以离线高速尝试常见口令。</p>
+<p>更合理的方向是：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">password + random salt -&gt; password hashing / KDF -&gt; 存算法、参数、salt、hash</span><br></pre></td></tr></table></figure>
 
-<p>实际系统中更推荐 Argon2id、scrypt、bcrypt、PBKDF2 这一类专门用于口令存储的算法。本文用 Python 标准库里的 PBKDF2-HMAC-SHA256 做演示，因为它不需要额外安装依赖，便于复现。</p>
-<h2 id="1-普通哈希的问题"><a href="#1-普通哈希的问题" class="headerlink" title="1. 普通哈希的问题"></a>1. 普通哈希的问题</h2><p>SHA256 是哈希算法，不是口令存储算法。它有一个特点：同一个输入永远得到同一个输出。</p>
-<p>例如口令：</p>
+<p>本文用 Python 标准库中的 PBKDF2-HMAC-SHA256 演示。真实新系统更推荐 Argon2id、scrypt、bcrypt 这类专门口令哈希算法；这里用 PBKDF2 是因为它不需要额外依赖，便于复现。</p>
+<h2 id="1-普通-SHA256-的问题"><a href="#1-普通-SHA256-的问题" class="headerlink" title="1. 普通 SHA256 的问题"></a>1. 普通 SHA256 的问题</h2><p>普通哈希有一个特点：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">同一个输入永远得到同一个输出</span><br></pre></td></tr></table></figure>
+
+<p>例如：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> hashlib</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">sha256_hex</span>(<span class="params">password: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="keyword">return</span> hashlib.sha256(password.encode(<span class="string">&quot;utf-8&quot;</span>)).hexdigest()</span><br></pre></td></tr></table></figure>
+
+<p>对同一个口令计算两次：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Correct-Horse-Battery-Staple</span><br></pre></td></tr></table></figure>
 
-<p>直接计算 SHA256：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> hashlib</span><br><span class="line"></span><br><span class="line">digest = hashlib.sha256(password.encode(<span class="string">&quot;utf-8&quot;</span>)).hexdigest()</span><br></pre></td></tr></table></figure>
+<p>结果完全一样。</p>
+<p>真实运行截图：</p>
+<p><img src="/images/crypto-experiments/vscode/password_storage_vscode_terminal_detail.png" alt="口令存储 VSCode 运行截图"></p>
+<p>截图里可以看到：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">SHA256(password): a8936e06dff4325a005bc4b68d5775bff9b3b05122784af264137aa6cd433ff3</span><br><span class="line">SHA256(password) again: a8936e06dff4325a005bc4b68d5775bff9b3b05122784af264137aa6cd433ff3</span><br></pre></td></tr></table></figure>
 
-<p>只要口令不变，哈希结果就不变。</p>
-<p>这会带来两个问题：</p>
-<ol>
-<li>两个用户使用同一个口令，数据库里的哈希值也相同。</li>
-<li>攻击者可以提前准备常见口令的哈希表，泄露后直接查表。</li>
-</ol>
-<p>所以口令存储不能只靠普通哈希。</p>
-<h2 id="2-盐是什么"><a href="#2-盐是什么" class="headerlink" title="2. 盐是什么"></a>2. 盐是什么</h2><p>盐就是每个口令记录独立生成的一段随机数据。</p>
+<p>这带来两个问题：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">两个用户使用同一口令，数据库中的 hash 相同</span><br><span class="line">攻击者可以提前准备常见口令 hash 表，泄露后直接查</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-salt-是什么"><a href="#2-salt-是什么" class="headerlink" title="2. salt 是什么"></a>2. salt 是什么</h2><p>salt 是每条口令记录单独生成的一段随机数据。</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">salt = random bytes</span><br><span class="line">hash = KDF(password, salt)</span><br></pre></td></tr></table></figure>
 
-<p>盐不需要保密，可以和哈希一起存在数据库里。它的作用不是当作第二个密码，而是让相同口令产生不同记录。</p>
-<p>例如两个用户都用了同一个口令：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">password = Correct-Horse-Battery-Staple</span><br></pre></td></tr></table></figure>
+<p>salt 不需要保密，可以和 hash 一起存储。它的作用不是当作第二个密码，而是让相同口令在不同记录中产生不同结果。</p>
+<p>例如两个用户都使用：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Correct-Horse-Battery-Staple</span><br></pre></td></tr></table></figure>
 
-<p>如果 salt 不同，最终存储记录也不同：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Record 1: pbkdf2_sha256$600000$salt1$hash1</span><br><span class="line">Record 2: pbkdf2_sha256$600000$salt2$hash2</span><br></pre></td></tr></table></figure>
+<p>如果 salt 不同，存储记录也不同：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Record 1: pbkdf2_sha256$600000$...$...</span><br><span class="line">Record 2: pbkdf2_sha256$600000$...$...</span><br></pre></td></tr></table></figure>
 
-<p>这样攻击者不能用一张简单的预计算表同时覆盖所有用户。</p>
-<h2 id="3-为什么还要慢哈希"><a href="#3-为什么还要慢哈希" class="headerlink" title="3. 为什么还要慢哈希"></a>3. 为什么还要慢哈希</h2><p>盐解决的是“相同口令相同哈希”和“预计算表”的问题，但没有解决“暴力猜测很快”的问题。</p>
-<p>普通 SHA256 设计目标之一就是快。文件校验、完整性摘要都希望它越快越好。但口令验证的需求反过来：单次验证对服务器可以接受，批量猜测对攻击者应该尽量昂贵。</p>
-<p>所以口令存储要用慢哈希或 KDF。</p>
-<p>PBKDF2 的思路很直接：把 HMAC 重复计算很多轮。</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">PBKDF2(password, salt, iterations)</span><br></pre></td></tr></table></figure>
+<p>这能防止攻击者通过“两个 hash 一样”直接看出两个用户口令一样，也能让预计算表失效。</p>
+<h2 id="3-为什么还需要慢哈希"><a href="#3-为什么还需要慢哈希" class="headerlink" title="3. 为什么还需要慢哈希"></a>3. 为什么还需要慢哈希</h2><p>salt 解决的是相同口令、预计算表的问题，但不解决普通哈希太快的问题。</p>
+<p>如果攻击者拿到数据库，可以离线尝试：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">candidate password -&gt; hash -&gt; compare</span><br></pre></td></tr></table></figure>
 
-<p><code>iterations</code> 越大，计算越慢。本文演示使用：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">600000</span><br></pre></td></tr></table></figure>
+<p>普通 SHA256 非常快，这对文件校验很好，但对口令存储不合适。</p>
+<p>慢哈希&#x2F;KDF 会故意提高每次尝试成本。例如 PBKDF2 会重复迭代很多轮：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">PBKDF2-HMAC-SHA256(password, salt, iterations=600000)</span><br></pre></td></tr></table></figure>
 
-<p>实际项目中参数要根据服务器性能、登录延迟和当前安全建议调整。</p>
-<h2 id="4-存储格式"><a href="#4-存储格式" class="headerlink" title="4. 存储格式"></a>4. 存储格式</h2><p>数据库里不要只存一个裸 hash。至少要存这些信息：</p>
+<p>这样用户登录时多花一点点时间，但攻击者批量猜测时成本会显著上升。</p>
+<h2 id="4-存储记录应该包含什么"><a href="#4-存储记录应该包含什么" class="headerlink" title="4. 存储记录应该包含什么"></a>4. 存储记录应该包含什么</h2><p>数据库里不要只存一个 hash。至少要存：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">algorithm$iterations$base64(salt)$base64(hash)</span><br></pre></td></tr></table></figure>
 
 <p>例如：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">pbkdf2_sha256$600000$...$...</span><br></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">pbkdf2_sha256$600000$base64_salt$base64_hash</span><br></pre></td></tr></table></figure>
 
-<p>这样以后参数升级时也能判断老记录使用了什么算法和迭代次数。</p>
-<p>登录校验流程是：</p>
-<ol>
-<li>从数据库读取记录。</li>
-<li>解析算法、迭代次数、salt、hash。</li>
-<li>用用户输入的 password 和同一个 salt 重新计算。</li>
-<li>用常量时间比较函数比较两个 hash。</li>
-</ol>
-<p>不要直接使用 <code>==</code> 比较敏感摘要，Python 中可以使用：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">hmac.compare_digest(actual, expected)</span><br></pre></td></tr></table></figure>
+<p>为什么要存算法和参数？</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">以后可以升级迭代次数</span><br><span class="line">不同用户记录可能使用不同旧参数</span><br><span class="line">验证时需要知道当时用的 salt 和 iterations</span><br></pre></td></tr></table></figure>
 
-<h2 id="5-Python-实现"><a href="#5-Python-实现" class="headerlink" title="5. Python 实现"></a>5. Python 实现</h2><p>核心代码如下：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">derive_pbkdf2_hash</span>(<span class="params"></span></span><br><span class="line"><span class="params">    password: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    salt: <span class="built_in">bytes</span>,</span></span><br><span class="line"><span class="params">    iterations: <span class="built_in">int</span> = <span class="number">600_000</span>,</span></span><br><span class="line"><span class="params">    dklen: <span class="built_in">int</span> = <span class="number">32</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">bytes</span>:</span><br><span class="line">    <span class="keyword">return</span> hashlib.pbkdf2_hmac(</span><br><span class="line">        <span class="string">&quot;sha256&quot;</span>,</span><br><span class="line">        password.encode(<span class="string">&quot;utf-8&quot;</span>),</span><br><span class="line">        salt,</span><br><span class="line">        iterations,</span><br><span class="line">        dklen=dklen,</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+<h2 id="5-Python-实现"><a href="#5-Python-实现" class="headerlink" title="5. Python 实现"></a>5. Python 实现</h2><p>派生 PBKDF2 hash：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"><span class="keyword">import</span> hashlib</span><br><span class="line"><span class="keyword">import</span> hmac</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">derive_pbkdf2_hash</span>(<span class="params"></span></span><br><span class="line"><span class="params">    password: <span class="built_in">str</span>,</span></span><br><span class="line"><span class="params">    salt: <span class="built_in">bytes</span>,</span></span><br><span class="line"><span class="params">    iterations: <span class="built_in">int</span> = <span class="number">600_000</span>,</span></span><br><span class="line"><span class="params">    dklen: <span class="built_in">int</span> = <span class="number">32</span>,</span></span><br><span class="line"><span class="params"></span>) -&gt; <span class="built_in">bytes</span>:</span><br><span class="line">    <span class="keyword">return</span> hashlib.pbkdf2_hmac(</span><br><span class="line">        <span class="string">&quot;sha256&quot;</span>,</span><br><span class="line">        password.encode(<span class="string">&quot;utf-8&quot;</span>),</span><br><span class="line">        salt,</span><br><span class="line">        iterations,</span><br><span class="line">        dklen=dklen,</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
 
-<p>生成存储记录：</p>
+<p>编码存储记录：</p>
 <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">encode_record</span>(<span class="params">iterations: <span class="built_in">int</span>, salt: <span class="built_in">bytes</span>, digest: <span class="built_in">bytes</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    salt_text = base64.b64encode(salt).decode(<span class="string">&quot;ascii&quot;</span>)</span><br><span class="line">    digest_text = base64.b64encode(digest).decode(<span class="string">&quot;ascii&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;pbkdf2_sha256$<span class="subst">&#123;iterations&#125;</span>$<span class="subst">&#123;salt_text&#125;</span>$<span class="subst">&#123;digest_text&#125;</span>&quot;</span></span><br></pre></td></tr></table></figure>
 
 <p>验证口令：</p>
 <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">verify_password</span>(<span class="params">password: <span class="built_in">str</span>, record: <span class="built_in">str</span></span>) -&gt; <span class="built_in">bool</span>:</span><br><span class="line">    algorithm, iteration_text, salt_text, digest_text = record.split(<span class="string">&quot;$&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> algorithm != <span class="string">&quot;pbkdf2_sha256&quot;</span>:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">f&quot;unsupported algorithm: <span class="subst">&#123;algorithm&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    iterations = <span class="built_in">int</span>(iteration_text)</span><br><span class="line">    salt = base64.b64decode(salt_text)</span><br><span class="line">    expected = base64.b64decode(digest_text)</span><br><span class="line">    actual = derive_pbkdf2_hash(password, salt, iterations, <span class="built_in">len</span>(expected))</span><br><span class="line">    <span class="keyword">return</span> hmac.compare_digest(actual, expected)</span><br></pre></td></tr></table></figure>
 
-<p>完整代码截图：</p>
-<p><img src="/images/crypto-experiments/password-storage/password_storage_code.png" alt="PBKDF2 口令存储代码截图"></p>
-<h2 id="6-真实运行结果"><a href="#6-真实运行结果" class="headerlink" title="6. 真实运行结果"></a>6. 真实运行结果</h2><p>运行脚本：</p>
-<figure class="highlight powershell"><table><tr><td class="code"><pre><span class="line">python D:\密码实验\work\blog_password_storage\password_storage_demo.py</span><br></pre></td></tr></table></figure>
+<p>这里使用：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">hmac.compare_digest(actual, expected)</span><br></pre></td></tr></table></figure>
 
-<p>运行截图：</p>
-<p><img src="/images/crypto-experiments/password-storage/password_storage_run.png" alt="PBKDF2 口令存储运行截图"></p>
-<p>从运行结果可以看到：</p>
-<ol>
-<li>普通 SHA256 两次输出完全一样。</li>
-<li>同一个口令生成两条 PBKDF2 记录时，因为 salt 不同，记录不同。</li>
-<li>正确口令验证为 <code>True</code>。</li>
-<li>错误口令验证为 <code>False</code>。</li>
-</ol>
-<h2 id="7-Argon2id、bcrypt、PBKDF2-怎么选"><a href="#7-Argon2id、bcrypt、PBKDF2-怎么选" class="headerlink" title="7. Argon2id、bcrypt、PBKDF2 怎么选"></a>7. Argon2id、bcrypt、PBKDF2 怎么选</h2><p>如果是新系统，优先考虑 Argon2id。它在设计上考虑了内存成本，能提高 GPU&#x2F;ASIC 批量攻击成本。</p>
-<p>常见选择可以这样理解：</p>
+<p>而不是普通 <code>==</code>。它用于常量时间比较，避免比较过程泄露细微时间差。</p>
+<h2 id="6-生成两条记录"><a href="#6-生成两条记录" class="headerlink" title="6. 生成两条记录"></a>6. 生成两条记录</h2><p>演示代码中，每次都使用：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">salt = os.urandom(<span class="number">16</span>)</span><br></pre></td></tr></table></figure>
+
+<p>生成随机 salt。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">password = <span class="string">&quot;Correct-Horse-Battery-Staple&quot;</span></span><br><span class="line">iterations = <span class="number">600_000</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> index <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">1</span>, <span class="number">3</span>):</span><br><span class="line">    salt = os.urandom(<span class="number">16</span>)</span><br><span class="line">    digest = derive_pbkdf2_hash(password, salt, iterations)</span><br><span class="line">    record = encode_record(iterations, salt, digest)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;Record <span class="subst">&#123;index&#125;</span>: <span class="subst">&#123;record&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;Verify correct password: <span class="subst">&#123;verify_password(password, record)&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;Verify wrong password: <span class="subst">&#123;verify_password(<span class="string">&#x27;wrong-password&#x27;</span>, record)&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>真实运行截图里可以看到：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Record 1: pbkdf2_sha256$600000$...$...</span><br><span class="line">Verify correct password: True</span><br><span class="line">Verify wrong password: False</span><br><span class="line"></span><br><span class="line">Record 2: pbkdf2_sha256$600000$...$...</span><br><span class="line">Verify correct password: True</span><br><span class="line">Verify wrong password: False</span><br></pre></td></tr></table></figure>
+
+<p>两条记录不同，但都能用正确口令验证通过。</p>
+<h2 id="7-VSCode-代码截图"><a href="#7-VSCode-代码截图" class="headerlink" title="7. VSCode 代码截图"></a>7. VSCode 代码截图</h2><p>下面是完整脚本在 VSCode 中运行的截图：</p>
+<p><img src="/images/crypto-experiments/vscode/password_storage_vscode_run.png" alt="口令存储代码运行截图"></p>
+<p>脚本文件路径：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">D:\密码实验\work\blog_password_storage\password_storage_demo.py</span><br></pre></td></tr></table></figure>
+
+<h2 id="8-Argon2id、scrypt、bcrypt、PBKDF2-怎么选"><a href="#8-Argon2id、scrypt、bcrypt、PBKDF2-怎么选" class="headerlink" title="8. Argon2id、scrypt、bcrypt、PBKDF2 怎么选"></a>8. Argon2id、scrypt、bcrypt、PBKDF2 怎么选</h2><p>常见选择可以这样理解：</p>
 <table>
 <thead>
 <tr>
 <th>算法</th>
 <th>特点</th>
-<th>使用建议</th>
+<th>建议</th>
 </tr>
 </thead>
 <tbody><tr>
 <td>Argon2id</td>
 <td>可设置时间成本、内存成本、并行度</td>
-<td>新项目优先考虑</td>
+<td>新系统优先考虑</td>
 </tr>
 <tr>
 <td>scrypt</td>
-<td>内存硬算法</td>
-<td>也适合口令存储</td>
+<td>内存硬算法，增加硬件批量攻击成本</td>
+<td>适合口令存储</td>
 </tr>
 <tr>
 <td>bcrypt</td>
-<td>历史长，使用广</td>
+<td>历史长，库支持广</td>
 <td>注意输入长度限制</td>
 </tr>
 <tr>
 <td>PBKDF2</td>
-<td>标准库和合规场景常见</td>
-<td>参数要足够高</td>
+<td>标准化时间久，合规和标准库常见</td>
+<td>迭代次数要足够高</td>
 </tr>
 </tbody></table>
-<p>本文使用 PBKDF2 不是说它一定最好，而是它容易用 Python 标准库复现，适合教学演示。</p>
-<h2 id="8-常见错误"><a href="#8-常见错误" class="headerlink" title="8. 常见错误"></a>8. 常见错误</h2><h3 id="8-1-salt-写死"><a href="#8-1-salt-写死" class="headerlink" title="8.1 salt 写死"></a>8.1 salt 写死</h3><p>salt 必须每条口令记录随机生成。不能写成固定字符串：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">salt = &quot;my-salt&quot;</span><br></pre></td></tr></table></figure>
+<p>本文使用 PBKDF2 是教学演示，不是说它永远最优。真实项目应结合语言生态、合规要求和运行成本选择。</p>
+<h2 id="9-常见错误"><a href="#9-常见错误" class="headerlink" title="9. 常见错误"></a>9. 常见错误</h2><h3 id="9-1-salt-写死"><a href="#9-1-salt-写死" class="headerlink" title="9.1 salt 写死"></a>9.1 salt 写死</h3><p>错误：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">salt = &quot;my-fixed-salt&quot;</span><br></pre></td></tr></table></figure>
 
-<p>固定 salt 只能让所有人一起“加同一个料”，不能解决相同口令相同记录的问题。</p>
-<h3 id="8-2-把-salt-当成秘密"><a href="#8-2-把-salt-当成秘密" class="headerlink" title="8.2 把 salt 当成秘密"></a>8.2 把 salt 当成秘密</h3><p>salt 可以公开存储。真正需要保密的是用户口令本身，以及可选的服务器端 pepper。</p>
-<p>pepper 和 salt 不一样。pepper 通常是系统级秘密，不能和数据库记录放在一起。</p>
-<h3 id="8-3-迭代次数永远不升级"><a href="#8-3-迭代次数永远不升级" class="headerlink" title="8.3 迭代次数永远不升级"></a>8.3 迭代次数永远不升级</h3><p>硬件会变快，旧参数会逐渐不够。比较实际的做法是：</p>
-<ol>
-<li>记录中保存参数。</li>
-<li>登录成功后检查参数是否过旧。</li>
-<li>如果过旧，用新参数重新计算并更新记录。</li>
-</ol>
-<h3 id="8-4-忘记限速"><a href="#8-4-忘记限速" class="headerlink" title="8.4 忘记限速"></a>8.4 忘记限速</h3><p>慢哈希不是万能的。登录接口还要做限速、失败次数控制、异常检测和多因素认证。</p>
-<h2 id="9-小结"><a href="#9-小结" class="headerlink" title="9. 小结"></a>9. 小结</h2><p>口令存储至少要做到：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">每条记录随机 salt</span><br><span class="line">使用专门的口令哈希/KDF</span><br><span class="line">保存算法和参数</span><br><span class="line">使用安全比较函数</span><br><span class="line">支持参数升级</span><br></pre></td></tr></table></figure>
+<p>salt 必须每条记录随机生成。固定 salt 无法让相同口令产生不同记录。</p>
+<h3 id="9-2-把-salt-当秘密"><a href="#9-2-把-salt-当秘密" class="headerlink" title="9.2 把 salt 当秘密"></a>9.2 把 salt 当秘密</h3><p>salt 可以公开存储。它的作用是唯一性，不是保密性。</p>
+<p>如果需要服务器端秘密，可以讨论 pepper。但 pepper 不应和数据库记录放在一起。</p>
+<h3 id="9-3-迭代次数永远不升级"><a href="#9-3-迭代次数永远不升级" class="headerlink" title="9.3 迭代次数永远不升级"></a>9.3 迭代次数永远不升级</h3><p>硬件会变快，旧参数会逐渐不够。比较实际的做法：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">记录中保存 iterations</span><br><span class="line">用户登录成功后检查参数是否过旧</span><br><span class="line">过旧则用新参数重新计算并更新记录</span><br></pre></td></tr></table></figure>
 
-<p>不要把 SHA256(password) 当成完整口令存储方案。它缺少 salt 和成本参数，面对真实泄露场景很脆弱。</p>
+<h3 id="9-4-忘记登录限速"><a href="#9-4-忘记登录限速" class="headerlink" title="9.4 忘记登录限速"></a>9.4 忘记登录限速</h3><p>慢哈希主要提高离线攻击成本。在线登录接口仍然需要：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">失败次数限制</span><br><span class="line">IP/账号维度限速</span><br><span class="line">异常登录检测</span><br><span class="line">多因素认证</span><br></pre></td></tr></table></figure>
+
+<h3 id="9-5-使用裸-MD5-SHA1-SHA256-存密码"><a href="#9-5-使用裸-MD5-SHA1-SHA256-存密码" class="headerlink" title="9.5 使用裸 MD5&#x2F;SHA1&#x2F;SHA256 存密码"></a>9.5 使用裸 MD5&#x2F;SHA1&#x2F;SHA256 存密码</h3><p>这些是通用哈希函数，不是口令存储方案。即使用 SHA256，也缺少 salt 和成本参数。</p>
+<h2 id="10-小结"><a href="#10-小结" class="headerlink" title="10. 小结"></a>10. 小结</h2><p>口令存储至少应做到：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">每条记录随机 salt</span><br><span class="line">使用专门口令哈希或 KDF</span><br><span class="line">保存算法、参数、salt、hash</span><br><span class="line">验证时重新计算并常量时间比较</span><br><span class="line">支持参数升级</span><br><span class="line">登录接口做限速</span><br></pre></td></tr></table></figure>
+
+<p>不要把：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">SHA256(password)</span><br></pre></td></tr></table></figure>
+
+<p>当成完整口令存储方案。它在真实泄露场景下很脆弱。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
-<li>NIST SP 800-63B, Digital Identity Guidelines: Authentication and Lifecycle Management</li>
 <li>OWASP Password Storage Cheat Sheet</li>
-<li>RFC 9106: Argon2 Memory-Hard Function for Password Hashing and Proof-of-Work Applications</li>
-<li>Python Documentation: <code>hashlib.pbkdf2_hmac</code></li>
+<li>NIST SP 800-63B, Digital Identity Guidelines</li>
+<li>RFC 9106: Argon2 Memory-Hard Function</li>
+<li>Python hashlib 文档: <a target="_blank" rel="noopener" href="https://docs.python.org/3/library/hashlib.html">https://docs.python.org/3/library/hashlib.html</a></li>
 </ul>
 
     </div>

@@ -187,7 +187,7 @@
             
             <span class="tag">
                 
-                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #03a9f4">
+                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #ffa2c4">
                     密码学
                 </a>
             </span>
@@ -201,7 +201,7 @@
             
             <span class="tag">
                 
-                <a href="/tags/ePassport/" style="color: #ff7d73">
+                <a href="/tags/ePassport/" style="color: #03a9f4">
                     ePassport
                 </a>
             </span>
@@ -226,88 +226,112 @@
     </div>
     
     <div class="content" v-pre>
-        <h1 id="ePassport-BAC-密钥派生与-AES-解密"><a href="#ePassport-BAC-密钥派生与-AES-解密" class="headerlink" title="ePassport BAC 密钥派生与 AES 解密"></a>ePassport BAC 密钥派生与 AES 解密</h1><p>这篇文章复现 MysteryTwister C3 的一道 ePassport 题。题目给了一段 AES-CBC 密文，以及一行不完整的 MRZ 字符串。我们需要先恢复 MRZ 中缺失的字符，再根据 BAC 协议派生密钥，最后解密得到明文。</p>
-<p>题目给出的 MRZ 类似下面这样：</p>
+        <h1 id="ePassport-BAC-密钥派生与-AES-解密"><a href="#ePassport-BAC-密钥派生与-AES-解密" class="headerlink" title="ePassport BAC 密钥派生与 AES 解密"></a>ePassport BAC 密钥派生与 AES 解密</h1><p>这篇文章复现 MysteryTwister C3 的一道 ePassport BAC 题。</p>
+<p>题目给出：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">一段不完整 MRZ</span><br><span class="line">一段 AES-CBC 密文</span><br><span class="line">IV = 16 字节全 0</span><br><span class="line">padding = 01-00 padding</span><br></pre></td></tr></table></figure>
+
+<p>目标是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">1. 恢复 MRZ 中缺失的字符</span><br><span class="line">2. 根据 MRZ 派生 BAC 密钥</span><br><span class="line">3. 用 AES-CBC 解密密文</span><br><span class="line">4. 得到题目的 code word</span><br></pre></td></tr></table></figure>
+
+<h2 id="1-题目中的-MRZ"><a href="#1-题目中的-MRZ" class="headerlink" title="1. 题目中的 MRZ"></a>1. 题目中的 MRZ</h2><p>题目给出的不完整 MRZ 是：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">12345678&lt;8&lt;&lt;&lt;1110182&lt;111116?&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;4</span><br></pre></td></tr></table></figure>
 
-<p>其中 <code>?</code> 是丢失的字符。</p>
-<h2 id="1-题目给了什么"><a href="#1-题目给了什么" class="headerlink" title="1. 题目给了什么"></a>1. 题目给了什么</h2><p>题目说明：</p>
-<ul>
-<li>密文是 Base64 编码。</li>
-<li>加密模式是 AES-CBC。</li>
-<li>IV 是全 0。</li>
-<li>padding 是 <code>01-00 padding</code>。</li>
-<li>AES 密钥来自 ePassport BAC 的 MRZ 派生。</li>
-</ul>
-<p>密文如下：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">9MgYwmuPrjiecPMx61O6zIuy3MtIXQQ0E59T3xB6u0Gyf1gYs2i3K9Jx</span><br><span class="line">aa0zj4gTMazJuApwd6+jdyeI5iGHvhQyDHGVlAuYTgJrbFDrfB22Fpil2N</span><br><span class="line">fNnWFBTXyf7SDI</span><br></pre></td></tr></table></figure>
+<p>其中 <code>?</code> 是缺失字符。</p>
+<p>MRZ 是 Machine Readable Zone，护照和旅行证件中常见。BAC 会从 MRZ 信息里派生密钥，所以缺失一个字符也会导致最终密钥完全不同。</p>
+<h2 id="2-MRZ-字符取值"><a href="#2-MRZ-字符取值" class="headerlink" title="2. MRZ 字符取值"></a>2. MRZ 字符取值</h2><p>MRZ 校验位计算时，不同字符有不同数值：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">0-9 -&gt; 0-9</span><br><span class="line">A-Z -&gt; 10-35</span><br><span class="line">&lt;   -&gt; 0</span><br></pre></td></tr></table></figure>
 
-<h2 id="2-MRZ-字符和校验位"><a href="#2-MRZ-字符和校验位" class="headerlink" title="2. MRZ 字符和校验位"></a>2. MRZ 字符和校验位</h2><p>MRZ 中每个字符都有数值：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">0-9  -&gt; 0-9</span><br><span class="line">A-Z  -&gt; 10-35</span><br><span class="line">&lt;    -&gt; 0</span><br></pre></td></tr></table></figure>
+<p>代码：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">mrz_char_value</span>(<span class="params">ch: <span class="built_in">str</span></span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">    <span class="keyword">if</span> ch == <span class="string">&quot;&lt;&quot;</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">    <span class="keyword">if</span> ch.isdigit():</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">int</span>(ch)</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;A&quot;</span> &lt;= ch &lt;= <span class="string">&quot;Z&quot;</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">ord</span>(ch) - <span class="built_in">ord</span>(<span class="string">&quot;A&quot;</span>) + <span class="number">10</span></span><br><span class="line">    <span class="keyword">raise</span> ValueError(<span class="string">f&quot;invalid MRZ character: <span class="subst">&#123;ch&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
 
 <p>校验位使用循环权重：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">7, 3, 1</span><br></pre></td></tr></table></figure>
 
-<p>计算方法：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">mrz_char_value</span>(<span class="params">ch: <span class="built_in">str</span></span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">    <span class="keyword">if</span> ch == <span class="string">&quot;&lt;&quot;</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">    <span class="keyword">if</span> ch.isdigit():</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">int</span>(ch)</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;A&quot;</span> &lt;= ch &lt;= <span class="string">&quot;Z&quot;</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">ord</span>(ch) - <span class="built_in">ord</span>(<span class="string">&quot;A&quot;</span>) + <span class="number">10</span></span><br><span class="line">    <span class="keyword">raise</span> ValueError(<span class="string">f&quot;bad MRZ character: <span class="subst">&#123;ch&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">mrz_check_digit</span>(<span class="params">field: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    weights = [<span class="number">7</span>, <span class="number">3</span>, <span class="number">1</span>]</span><br><span class="line">    total = <span class="built_in">sum</span>(mrz_char_value(ch) * weights[i % <span class="number">3</span>] <span class="keyword">for</span> i, ch <span class="keyword">in</span> <span class="built_in">enumerate</span>(field))</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">str</span>(total % <span class="number">10</span>)</span><br></pre></td></tr></table></figure>
+<p>计算函数：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">mrz_check_digit</span>(<span class="params">field: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    weights = [<span class="number">7</span>, <span class="number">3</span>, <span class="number">1</span>]</span><br><span class="line">    total = <span class="built_in">sum</span>(mrz_char_value(ch) * weights[i % <span class="number">3</span>] <span class="keyword">for</span> i, ch <span class="keyword">in</span> <span class="built_in">enumerate</span>(field))</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">str</span>(total % <span class="number">10</span>)</span><br></pre></td></tr></table></figure>
 
-<p>对题目里的 <code>?</code>，我们枚举所有可能字符，然后检查护照号、出生日期、有效期字段的校验位。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">recover_mrz_missing_char</span>(<span class="params">line: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="keyword">for</span> candidate <span class="keyword">in</span> <span class="string">&quot;0123456789&lt;ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;</span>:</span><br><span class="line">        trial = line.replace(<span class="string">&quot;?&quot;</span>, candidate)</span><br><span class="line">        passport_no, passport_cd = trial[<span class="number">0</span>:<span class="number">9</span>], trial[<span class="number">9</span>]</span><br><span class="line">        birth, birth_cd = trial[<span class="number">13</span>:<span class="number">19</span>], trial[<span class="number">19</span>]</span><br><span class="line">        expiry, expiry_cd = trial[<span class="number">21</span>:<span class="number">27</span>], trial[<span class="number">27</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (</span><br><span class="line">            mrz_check_digit(passport_no) == passport_cd</span><br><span class="line">            <span class="keyword">and</span> mrz_check_digit(birth) == birth_cd</span><br><span class="line">            <span class="keyword">and</span> mrz_check_digit(expiry) == expiry_cd</span><br><span class="line">        ):</span><br><span class="line">            <span class="keyword">return</span> candidate</span><br><span class="line"></span><br><span class="line">    <span class="keyword">raise</span> ValueError(<span class="string">&quot;no MRZ candidate satisfies check digits&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h2 id="3-恢复缺失字符"><a href="#3-恢复缺失字符" class="headerlink" title="3. 恢复缺失字符"></a>3. 恢复缺失字符</h2><p>已知 MRZ 有多个字段自带校验位，例如：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">passport number</span><br><span class="line">birth date</span><br><span class="line">expiry date</span><br></pre></td></tr></table></figure>
 
-<p>恢复结果：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">missing character = 7</span><br></pre></td></tr></table></figure>
+<p>所以可以枚举 <code>?</code> 的候选字符，检查三个字段的校验位是否同时正确。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">MRZ_ALPHABET = <span class="string">&quot;0123456789&lt;ABCDEFGHIJKLMNOPQRSTUVWXYZ&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">recover_mrz_missing_char</span>(<span class="params">line: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="keyword">if</span> line.count(<span class="string">&quot;?&quot;</span>) != <span class="number">1</span>:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;expected exactly one missing character&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> candidate <span class="keyword">in</span> MRZ_ALPHABET:</span><br><span class="line">        trial = line.replace(<span class="string">&quot;?&quot;</span>, candidate)</span><br><span class="line">        passport_no, passport_cd = trial[<span class="number">0</span>:<span class="number">9</span>], trial[<span class="number">9</span>]</span><br><span class="line">        birth, birth_cd = trial[<span class="number">13</span>:<span class="number">19</span>], trial[<span class="number">19</span>]</span><br><span class="line">        expiry, expiry_cd = trial[<span class="number">21</span>:<span class="number">27</span>], trial[<span class="number">27</span>]</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (</span><br><span class="line">            mrz_check_digit(passport_no) == passport_cd</span><br><span class="line">            <span class="keyword">and</span> mrz_check_digit(birth) == birth_cd</span><br><span class="line">            <span class="keyword">and</span> mrz_check_digit(expiry) == expiry_cd</span><br><span class="line">        ):</span><br><span class="line">            <span class="keyword">return</span> candidate</span><br><span class="line"></span><br><span class="line">    <span class="keyword">raise</span> ValueError(<span class="string">&quot;no candidate satisfies check digits&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>运行结果恢复：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Recovered missing character: 7</span><br></pre></td></tr></table></figure>
 
 <p>完整 MRZ：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">12345678&lt;8&lt;&lt;&lt;1110182&lt;1111167&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;4</span><br></pre></td></tr></table></figure>
 
-<h2 id="3-BAC-密钥派生"><a href="#3-BAC-密钥派生" class="headerlink" title="3. BAC 密钥派生"></a>3. BAC 密钥派生</h2><p>BAC 会从 MRZ 信息中派生密钥。</p>
-<p>本题使用的 MRZ information 是：</p>
+<h2 id="4-生成-MRZ-information"><a href="#4-生成-MRZ-information" class="headerlink" title="4. 生成 MRZ information"></a>4. 生成 MRZ information</h2><p>BAC 不是直接对整行 MRZ 做 SHA1，而是取几个字段拼接。</p>
+<p>本题中的 MRZ information：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">12345678&lt;811101821111167</span><br></pre></td></tr></table></figure>
 
-<p>第一步：</p>
+<p>代码：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">mrz_info = mrz_line[<span class="number">0</span>:<span class="number">10</span>] + mrz_line[<span class="number">13</span>:<span class="number">20</span>] + mrz_line[<span class="number">21</span>:<span class="number">28</span>]</span><br></pre></td></tr></table></figure>
+
+<p>也就是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">passport number + check digit</span><br><span class="line">birth date + check digit</span><br><span class="line">expiry date + check digit</span><br></pre></td></tr></table></figure>
+
+<h2 id="5-BAC-密钥派生"><a href="#5-BAC-密钥派生" class="headerlink" title="5. BAC 密钥派生"></a>5. BAC 密钥派生</h2><p>第一步：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">K_seed = SHA1(MRZ_information)[0:16]</span><br></pre></td></tr></table></figure>
 
 <p>代码：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> hashlib</span><br><span class="line"></span><br><span class="line">mrz_info = mrz_line[<span class="number">0</span>:<span class="number">10</span>] + mrz_line[<span class="number">13</span>:<span class="number">20</span>] + mrz_line[<span class="number">21</span>:<span class="number">28</span>]</span><br><span class="line">k_seed = hashlib.sha1(mrz_info.encode(<span class="string">&quot;ascii&quot;</span>)).digest()[:<span class="number">16</span>]</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">k_seed = hashlib.sha1(mrz_info.encode(<span class="string">&quot;ascii&quot;</span>)).digest()[:<span class="number">16</span>]</span><br></pre></td></tr></table></figure>
 
-<p>第二步生成加密密钥材料：</p>
+<p>第二步，生成加密密钥材料：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">SHA1(K_seed || 00000001)[0:16]</span><br></pre></td></tr></table></figure>
 
-<p>第三步调整奇校验位：</p>
+<p>第三步，调整 DES 奇校验位。本题最终使用的是 16 字节密钥材料，但每个字节仍要调整奇校验位：</p>
 <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">adjust_des_parity</span>(<span class="params">data: <span class="built_in">bytes</span></span>) -&gt; <span class="built_in">bytes</span>:</span><br><span class="line">    adjusted = <span class="built_in">bytearray</span>()</span><br><span class="line">    <span class="keyword">for</span> byte <span class="keyword">in</span> data:</span><br><span class="line">        candidate = byte &amp; <span class="number">0xFE</span></span><br><span class="line">        <span class="keyword">if</span> candidate.bit_count() % <span class="number">2</span> == <span class="number">0</span>:</span><br><span class="line">            candidate |= <span class="number">1</span></span><br><span class="line">        adjusted.append(candidate)</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">bytes</span>(adjusted)</span><br></pre></td></tr></table></figure>
 
-<p>最终得到：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">K_seed = a095f0fdfe51e6ab3bf5c777302c473e</span><br><span class="line">K_ENC  = ea8645d97ff725a898942aa280c43179</span><br><span class="line">K_MAC  = b37a15207fbc4554527c67a15ba72f68</span><br></pre></td></tr></table></figure>
+<p>最终结果：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">K_seed                    : a095f0fdfe51e6ab3bf5c777302c473e</span><br><span class="line">SHA1(K_seed||00000001)    : eb8645d97ff725a998952aa381c53079</span><br><span class="line">K_ENC after parity adjust : ea8645d97ff725a898942aa280c43179</span><br><span class="line">K_MAC after parity adjust : b37a15207fbc4554527c67a15ba72f68</span><br></pre></td></tr></table></figure>
 
-<h2 id="4-AES-CBC-解密"><a href="#4-AES-CBC-解密" class="headerlink" title="4. AES-CBC 解密"></a>4. AES-CBC 解密</h2><p>题目说明 IV 是 0：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">plaintext = aes_cbc_decrypt(ciphertext, k_enc, <span class="built_in">bytes</span>(<span class="number">16</span>))</span><br></pre></td></tr></table></figure>
+<h2 id="6-AES-CBC-解密"><a href="#6-AES-CBC-解密" class="headerlink" title="6. AES-CBC 解密"></a>6. AES-CBC 解密</h2><p>题目说明：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">mode = AES-CBC</span><br><span class="line">IV   = 00000000000000000000000000000000</span><br></pre></td></tr></table></figure>
 
-<p>然后去除 <code>01-00 padding</code>：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">zero_one_unpad</span>(<span class="params">data: <span class="built_in">bytes</span></span>) -&gt; <span class="built_in">bytes</span>:</span><br><span class="line">    index = data.rfind(<span class="string">b&quot;\x01&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> index == -<span class="number">1</span> <span class="keyword">or</span> <span class="built_in">any</span>(data[index + <span class="number">1</span>:]):</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;invalid 01-00 padding&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> data[:index]</span><br></pre></td></tr></table></figure>
+<p>所以解密：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">ciphertext = base64.b64decode(CIPHERTEXT_B64)</span><br><span class="line">plaintext_padded = aes_cbc_decrypt(ciphertext, k_enc, <span class="built_in">bytes</span>(<span class="number">16</span>))</span><br></pre></td></tr></table></figure>
 
-<h2 id="5-真实运行结果"><a href="#5-真实运行结果" class="headerlink" title="5. 真实运行结果"></a>5. 真实运行结果</h2><p>运行脚本：</p>
-<figure class="highlight powershell"><table><tr><td class="code"><pre><span class="line">python work\experiment_02_aes_modes\<span class="number">04</span>_recover_mtc3_epassport_message.py</span><br></pre></td></tr></table></figure>
+<p>注意本题 padding 不是 PKCS#7，而是 <code>01-00 padding</code>。</p>
+<p>去 padding：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">zero_one_unpad</span>(<span class="params">data: <span class="built_in">bytes</span></span>) -&gt; <span class="built_in">bytes</span>:</span><br><span class="line">    index = data.rfind(<span class="string">b&quot;\x01&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> index == -<span class="number">1</span>:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;missing 01 marker&quot;</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">any</span>(data[index + <span class="number">1</span> :]):</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;invalid 01-00 padding&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> data[:index]</span><br></pre></td></tr></table></figure>
 
-<p>截图如下：</p>
-<p><img src="/images/crypto-experiments/detailed/exp02_04_epassport_run.png" alt="ePassport BAC 运行截图"></p>
-<p>解出的明文：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Herzlichen Glueckwunsch. Sie haben die Nuss geknackt. Das Codewort lautet: Kryptographie!</span><br></pre></td></tr></table></figure>
+<h2 id="7-真实运行结果"><a href="#7-真实运行结果" class="headerlink" title="7. 真实运行结果"></a>7. 真实运行结果</h2><p>运行脚本：</p>
+<figure class="highlight powershell"><table><tr><td class="code"><pre><span class="line">python work\experiment_02_aes_modes\<span class="number">09</span>_recover_mtc3_epassport_message.py</span><br></pre></td></tr></table></figure>
 
-<p>所以 code word 是：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Kryptographie!</span><br></pre></td></tr></table></figure>
+<p>真实 VSCode 截图：</p>
+<p><img src="/images/crypto-experiments/vscode/exp02_09_epassport_vscode_terminal_detail.png" alt="ePassport BAC 运行截图"></p>
+<p>输出：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Recovered missing character: 7</span><br><span class="line">MRZ information string     : 12345678&lt;811101821111167</span><br><span class="line">K_seed                     : a095f0fdfe51e6ab3bf5c777302c473e</span><br><span class="line">K_ENC after parity adjust  : ea8645d97ff725a898942aa280c43179</span><br><span class="line">Plaintext:</span><br><span class="line">Herzlichen Glueckwunsch. Sie haben die Nuss geknackt. Das Codewort lautet: Kryptographie!</span><br></pre></td></tr></table></figure>
 
-<h2 id="6-代码截图"><a href="#6-代码截图" class="headerlink" title="6. 代码截图"></a>6. 代码截图</h2><p><img src="/images/crypto-experiments/detailed/exp02_04_epassport_code.png" alt="ePassport BAC 代码截图"></p>
-<h2 id="7-常见错误"><a href="#7-常见错误" class="headerlink" title="7. 常见错误"></a>7. 常见错误</h2><h3 id="7-1-MRZ-字段切片错误"><a href="#7-1-MRZ-字段切片错误" class="headerlink" title="7.1 MRZ 字段切片错误"></a>7.1 MRZ 字段切片错误</h3><p>MRZ 字段位置一旦切错，后面的 K_seed 就完全不对。建议先打印 <code>mrz_info</code>。</p>
-<h3 id="7-2-忘记奇校验位调整"><a href="#7-2-忘记奇校验位调整" class="headerlink" title="7.2 忘记奇校验位调整"></a>7.2 忘记奇校验位调整</h3><p>如果直接拿 SHA1 前 16 字节当 AES key，解出来会是乱码。本题必须做 parity adjustment。</p>
-<h3 id="7-3-padding-处理错"><a href="#7-3-padding-处理错" class="headerlink" title="7.3 padding 处理错"></a>7.3 padding 处理错</h3><p>本题不是 PKCS#7，而是 <code>01-00 padding</code>。最后一个有效内容后面是 <code>0x01</code>，再跟若干 <code>0x00</code>。</p>
-<h2 id="8-小结"><a href="#8-小结" class="headerlink" title="8. 小结"></a>8. 小结</h2><p>这道题难点不是 AES-CBC 本身，而是前面的 MRZ 和 BAC 派生过程。完整流程是：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">恢复 MRZ 缺失字符</span><br><span class="line">提取 MRZ information</span><br><span class="line">SHA1 得到 K_seed</span><br><span class="line">派生 K_ENC/K_MAC</span><br><span class="line">AES-CBC 解密</span><br><span class="line">去 01-00 padding</span><br><span class="line">读取 code word</span><br></pre></td></tr></table></figure>
+<p>code word 是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Kryptographie</span><br></pre></td></tr></table></figure>
 
-<p>只要中间一步错了，最终明文就不会可读。</p>
+<h2 id="8-代码截图与测试"><a href="#8-代码截图与测试" class="headerlink" title="8. 代码截图与测试"></a>8. 代码截图与测试</h2><p>代码运行截图：</p>
+<p><img src="/images/crypto-experiments/vscode/exp02_09_epassport_vscode_run.png" alt="ePassport BAC 代码运行截图"></p>
+<p>单元测试里也检查了：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">missing_char == &quot;7&quot;</span><br><span class="line">plaintext contains &quot;Kryptographie&quot;</span><br></pre></td></tr></table></figure>
+
+<p>测试截图：</p>
+<p><img src="/images/crypto-experiments/vscode/exp02_10_tests_vscode_terminal_detail.png" alt="实验二单元测试截图"></p>
+<h2 id="9-常见错误"><a href="#9-常见错误" class="headerlink" title="9. 常见错误"></a>9. 常见错误</h2><h3 id="9-1-MRZ-字段切片错误"><a href="#9-1-MRZ-字段切片错误" class="headerlink" title="9.1 MRZ 字段切片错误"></a>9.1 MRZ 字段切片错误</h3><p>MRZ 的位置非常重要。切片错一位，K_seed 就完全不同。建议先打印：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">MRZ information string</span><br></pre></td></tr></table></figure>
+
+<p>确认后再派生密钥。</p>
+<h3 id="9-2-忘记校验位"><a href="#9-2-忘记校验位" class="headerlink" title="9.2 忘记校验位"></a>9.2 忘记校验位</h3><p>缺失字符不是随便猜。它必须让护照号、出生日期、有效期等字段校验位同时成立。</p>
+<h3 id="9-3-忘记奇校验位调整"><a href="#9-3-忘记奇校验位调整" class="headerlink" title="9.3 忘记奇校验位调整"></a>9.3 忘记奇校验位调整</h3><p>如果直接拿 SHA1 的前 16 字节当 K_ENC，可能会解密失败。题目流程要求做 parity adjustment。</p>
+<h3 id="9-4-用错-padding"><a href="#9-4-用错-padding" class="headerlink" title="9.4 用错 padding"></a>9.4 用错 padding</h3><p>本题是 <code>01-00 padding</code>，不是 PKCS#7。去填充逻辑不同。</p>
+<h3 id="9-5-IV-写错"><a href="#9-5-IV-写错" class="headerlink" title="9.5 IV 写错"></a>9.5 IV 写错</h3><p>题目明确 IV 是全 0。如果 IV 不对，第一块明文会错，后续结果也无法正常解释。</p>
+<h2 id="10-小结"><a href="#10-小结" class="headerlink" title="10. 小结"></a>10. 小结</h2><p>这道 ePassport BAC 题串起了几个点：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">MRZ 校验位</span><br><span class="line">缺失字符枚举</span><br><span class="line">SHA1 派生 K_seed</span><br><span class="line">K_ENC / K_MAC 派生</span><br><span class="line">DES parity adjustment</span><br><span class="line">AES-CBC 解密</span><br><span class="line">01-00 padding 去除</span><br></pre></td></tr></table></figure>
+
+<p>做这种题时，不要急着上 AES。先把 MRZ 恢复和密钥派生每一步打印出来，确认中间值正确，最后再解密。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
-<li>MysteryTwister C3: AES key encoded in the machine readable zone of a European ePassport</li>
-<li>ICAO Doc 9303</li>
-<li>Cryptopals Set 2</li>
+<li>MysteryTwister C3 ePassport BAC challenge</li>
+<li>ICAO Doc 9303, Machine Readable Travel Documents</li>
+<li>Basic Access Control 相关资料</li>
+<li>NIST SP 800-38A, CBC mode</li>
 </ul>
 
     </div>

@@ -187,21 +187,21 @@
             
             <span class="tag">
                 
-                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #ff7d73">
+                <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" style="color: #03a9f4">
                     密码学
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/Cryptopals/" style="color: #03a9f4">
+                <a href="/tags/Cryptopals/" style="color: #ff7d73">
                     Cryptopals
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/XOR/" style="color: #00bcd4">
+                <a href="/tags/XOR/" style="color: #ffa2c4">
                     XOR
                 </a>
             </span>
@@ -219,126 +219,139 @@
     </div>
     
     <div class="content" v-pre>
-        <h1 id="从-Cryptopals-学习-XOR-密码分析"><a href="#从-Cryptopals-学习-XOR-密码分析" class="headerlink" title="从 Cryptopals 学习 XOR 密码分析"></a>从 Cryptopals 学习 XOR 密码分析</h1><p>这篇文章记录 Cryptopals Set 1 中和 XOR 有关的几个基础题。内容不追求花哨，主要是把每一步怎么做、为什么这么做、代码怎么写、运行结果是什么讲清楚。</p>
-<p>实验数据全部来自 Cryptopals 的真实题面和 challenge-data 文件，没有自己造简单数据代替。</p>
-<p>涉及的子问题：</p>
+        <h1 id="从-Cryptopals-学习-XOR-密码分析"><a href="#从-Cryptopals-学习-XOR-密码分析" class="headerlink" title="从 Cryptopals 学习 XOR 密码分析"></a>从 Cryptopals 学习 XOR 密码分析</h1><p>Cryptopals Set 1 很适合作为密码学实验的开头。它没有一上来就做复杂协议，而是让人先把几个基础动作练扎实：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">hex/base64/bytes 的转换</span><br><span class="line">固定 XOR</span><br><span class="line">单字节 XOR 暴力破解</span><br><span class="line">从很多候选密文中检测哪一行是单字节 XOR</span><br><span class="line">重复密钥 XOR 加密</span><br><span class="line">重复密钥 XOR 破译</span><br></pre></td></tr></table></figure>
+
+<p>本文全部使用 Cryptopals 的真实题目数据和 challenge-data 文件，不用自造小样例替代平台数据。</p>
+<p>实验文件拆成了 6 个独立脚本：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">01_convert_hex_to_base64.py</span><br><span class="line">02_fixed_xor_buffers.py</span><br><span class="line">03_break_single_byte_xor.py</span><br><span class="line">04_detect_single_character_xor.py</span><br><span class="line">05_implement_repeating_key_xor.py</span><br><span class="line">06_break_repeating_key_xor.py</span><br></pre></td></tr></table></figure>
 
-<h2 id="1-编码转换：hex-到-base64"><a href="#1-编码转换：hex-到-base64" class="headerlink" title="1. 编码转换：hex 到 base64"></a>1. 编码转换：hex 到 base64</h2><p>Cryptopals 第一题给出一串十六进制字符串：</p>
+<p>这样做的好处是每个子题可以单独运行、单独截图、单独看日志，后面写报告也更清楚。</p>
+<h2 id="1-所有操作先回到-bytes"><a href="#1-所有操作先回到-bytes" class="headerlink" title="1. 所有操作先回到 bytes"></a>1. 所有操作先回到 bytes</h2><p>XOR 是按 bit&#x2F;byte 做的运算。hex 和 base64 都只是编码格式。</p>
+<p>所以基本流程应该是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">hex string -&gt; bytes -&gt; XOR/分析 -&gt; bytes -&gt; hex/base64/text</span><br><span class="line">base64 text -&gt; bytes -&gt; XOR/分析 -&gt; bytes -&gt; text</span><br></pre></td></tr></table></figure>
+
+<p>不要直接在 <code>&quot;1c0111...&quot;</code> 这种字符串字符上 XOR。那样 XOR 的是字符 <code>&#39;1&#39;</code>、<code>&#39;c&#39;</code>、<code>&#39;0&#39;</code> 的 ASCII，而不是原始字节。</p>
+<h2 id="2-Convert-hex-to-base64"><a href="#2-Convert-hex-to-base64" class="headerlink" title="2. Convert hex to base64"></a>2. Convert hex to base64</h2><p>第一题给出的 hex 字符串是：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d</span><br></pre></td></tr></table></figure>
 
-<p>要求输出 base64：</p>
+<p>目标 base64 是：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">SSdtIGtpbGxpbmcgeW91ciBicmFpbiBsaWtlIGEgcG9pc29ub3VzIG11c2hyb29t</span><br></pre></td></tr></table></figure>
 
-<p>注意：hex 和 base64 都是编码，不是加密。代码里应该先把 hex 转成原始 bytes，再把 bytes 转成 base64。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">hex_to_base64</span>(<span class="params">hex_string: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    raw = <span class="built_in">bytes</span>.fromhex(hex_string)</span><br><span class="line">    <span class="keyword">return</span> base64.b64encode(raw).decode(<span class="string">&quot;ascii&quot;</span>)</span><br></pre></td></tr></table></figure>
+<p>代码：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> base64</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">hex_to_base64</span>(<span class="params">hex_string: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="keyword">return</span> base64.b64encode(<span class="built_in">bytes</span>.fromhex(hex_string)).decode(<span class="string">&quot;ascii&quot;</span>)</span><br></pre></td></tr></table></figure>
 
-<p>单独运行脚本：</p>
+<p>运行：</p>
 <figure class="highlight powershell"><table><tr><td class="code"><pre><span class="line">python work\experiment_01_cryptopals_xor\<span class="number">01</span>_convert_hex_to_base64.py</span><br></pre></td></tr></table></figure>
 
-<p><img src="/images/crypto-experiments/detailed/exp01_01_hex_run.png" alt="hex 转 base64 运行截图"></p>
-<h2 id="2-固定-XOR"><a href="#2-固定-XOR" class="headerlink" title="2. 固定 XOR"></a>2. 固定 XOR</h2><p>第二题要求对两个等长 buffer 做 XOR。</p>
-<p>输入：</p>
+<p>真实 VSCode 截图：</p>
+<p><img src="/images/crypto-experiments/vscode/exp01_01_hex_vscode_terminal_detail.png" alt="hex 转 base64 运行截图"></p>
+<p>截图里可以看到 <code>Expected base64</code> 和 <code>Actual base64</code> 一致，验证结果为 <code>PASS</code>。</p>
+<h2 id="3-Fixed-XOR"><a href="#3-Fixed-XOR" class="headerlink" title="3. Fixed XOR"></a>3. Fixed XOR</h2><p>第二题给出两个等长 buffer：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">1c0111001f010100061a024b53535009181c</span><br><span class="line">686974207468652062756c6c277320657965</span><br></pre></td></tr></table></figure>
 
-<p>输出：</p>
+<p>要求逐字节 XOR，结果为：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">746865206b696420646f6e277420706c6179</span><br></pre></td></tr></table></figure>
 
-<p>代码非常直接：</p>
+<p>实现：</p>
 <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">fixed_xor</span>(<span class="params">left_hex: <span class="built_in">str</span>, right_hex: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    left = <span class="built_in">bytes</span>.fromhex(left_hex)</span><br><span class="line">    right = <span class="built_in">bytes</span>.fromhex(right_hex)</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(left) != <span class="built_in">len</span>(right):</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;buffers must have equal length&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">bytes</span>(a ^ b <span class="keyword">for</span> a, b <span class="keyword">in</span> <span class="built_in">zip</span>(left, right)).<span class="built_in">hex</span>()</span><br></pre></td></tr></table></figure>
 
-<p>这里最重要的是先检查长度。XOR 是逐字节操作，两边长度不一致就不应该继续算。</p>
-<h2 id="3-单字节-XOR-破译"><a href="#3-单字节-XOR-破译" class="headerlink" title="3. 单字节 XOR 破译"></a>3. 单字节 XOR 破译</h2><p>第三题给出一段 hex：</p>
+<p>这里一定要检查长度。固定 XOR 的两个输入长度不一致时，不能悄悄截断。</p>
+<p>运行截图：</p>
+<p><img src="/images/crypto-experiments/vscode/exp01_02_fixed_xor_vscode_terminal_detail.png" alt="Fixed XOR 运行截图"></p>
+<h2 id="4-Single-byte-XOR-cipher"><a href="#4-Single-byte-XOR-cipher" class="headerlink" title="4. Single-byte XOR cipher"></a>4. Single-byte XOR cipher</h2><p>第三题给出一个被单字节 XOR 加密的 hex：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736</span><br></pre></td></tr></table></figure>
 
-<p>它被一个单字节 key XOR 过。因为 key 只有 1 byte，所以可以枚举 <code>0..255</code>。</p>
-<p>核心思路：</p>
-<ol>
-<li>把密文从 hex 转为 bytes。</li>
-<li>枚举所有 key。</li>
-<li>每个 key 都 XOR 一遍。</li>
-<li>对候选明文做英文评分。</li>
-<li>取最高分。</li>
-</ol>
-<p>评分函数示例：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">english_score</span>(<span class="params">data: <span class="built_in">bytes</span></span>) -&gt; <span class="built_in">float</span>:</span><br><span class="line">    frequencies = &#123;</span><br><span class="line">        <span class="string">&quot;e&quot;</span>: <span class="number">12.70</span>,</span><br><span class="line">        <span class="string">&quot;t&quot;</span>: <span class="number">9.06</span>,</span><br><span class="line">        <span class="string">&quot;a&quot;</span>: <span class="number">8.17</span>,</span><br><span class="line">        <span class="string">&quot;o&quot;</span>: <span class="number">7.51</span>,</span><br><span class="line">        <span class="string">&quot;i&quot;</span>: <span class="number">6.97</span>,</span><br><span class="line">        <span class="string">&quot;n&quot;</span>: <span class="number">6.75</span>,</span><br><span class="line">        <span class="string">&quot; &quot;</span>: <span class="number">13.00</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    score = <span class="number">0.0</span></span><br><span class="line">    <span class="keyword">for</span> byte <span class="keyword">in</span> data:</span><br><span class="line">        ch = <span class="built_in">chr</span>(byte).lower()</span><br><span class="line">        <span class="keyword">if</span> ch <span class="keyword">in</span> frequencies:</span><br><span class="line">            score += frequencies[ch]</span><br><span class="line">        <span class="keyword">elif</span> <span class="number">32</span> &lt;= byte &lt;= <span class="number">126</span> <span class="keyword">or</span> byte <span class="keyword">in</span> (<span class="number">10</span>, <span class="number">13</span>):</span><br><span class="line">            score += <span class="number">0.1</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            score -= <span class="number">20</span></span><br><span class="line">    <span class="keyword">return</span> score</span><br></pre></td></tr></table></figure>
+<p>单字节 XOR 的密钥只有 256 种，所以可以全枚举。关键不在枚举，而在如何判断哪个候选明文最像英文。</p>
+<p>一个简单评分函数：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">english_score</span>(<span class="params">data: <span class="built_in">bytes</span></span>) -&gt; <span class="built_in">float</span>:</span><br><span class="line">    frequencies = &#123;</span><br><span class="line">        <span class="string">&quot;e&quot;</span>: <span class="number">12.70</span>,</span><br><span class="line">        <span class="string">&quot;t&quot;</span>: <span class="number">9.06</span>,</span><br><span class="line">        <span class="string">&quot;a&quot;</span>: <span class="number">8.17</span>,</span><br><span class="line">        <span class="string">&quot;o&quot;</span>: <span class="number">7.51</span>,</span><br><span class="line">        <span class="string">&quot;i&quot;</span>: <span class="number">6.97</span>,</span><br><span class="line">        <span class="string">&quot;n&quot;</span>: <span class="number">6.75</span>,</span><br><span class="line">        <span class="string">&quot; &quot;</span>: <span class="number">13.00</span>,</span><br><span class="line">        <span class="string">&quot;s&quot;</span>: <span class="number">6.33</span>,</span><br><span class="line">        <span class="string">&quot;h&quot;</span>: <span class="number">6.09</span>,</span><br><span class="line">        <span class="string">&quot;r&quot;</span>: <span class="number">5.99</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    score = <span class="number">0.0</span></span><br><span class="line">    <span class="keyword">for</span> byte <span class="keyword">in</span> data:</span><br><span class="line">        ch = <span class="built_in">chr</span>(byte).lower()</span><br><span class="line">        <span class="keyword">if</span> ch <span class="keyword">in</span> frequencies:</span><br><span class="line">            score += frequencies[ch]</span><br><span class="line">        <span class="keyword">elif</span> <span class="number">32</span> &lt;= byte &lt;= <span class="number">126</span> <span class="keyword">or</span> byte <span class="keyword">in</span> (<span class="number">10</span>, <span class="number">13</span>):</span><br><span class="line">            score += <span class="number">0.1</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            score -= <span class="number">20.0</span></span><br><span class="line">    <span class="keyword">return</span> score</span><br></pre></td></tr></table></figure>
 
 <p>破译函数：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">break_single_byte_xor</span>(<span class="params">ciphertext: <span class="built_in">bytes</span></span>):</span><br><span class="line">    best = <span class="literal">None</span></span><br><span class="line">    <span class="keyword">for</span> key <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">256</span>):</span><br><span class="line">        plaintext = <span class="built_in">bytes</span>(byte ^ key <span class="keyword">for</span> byte <span class="keyword">in</span> ciphertext)</span><br><span class="line">        score = english_score(plaintext)</span><br><span class="line">        <span class="keyword">if</span> best <span class="keyword">is</span> <span class="literal">None</span> <span class="keyword">or</span> score &gt; best[<span class="number">0</span>]:</span><br><span class="line">            best = (score, key, plaintext)</span><br><span class="line">    <span class="keyword">return</span> best</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">break_single_byte_xor</span>(<span class="params">ciphertext: <span class="built_in">bytes</span></span>) -&gt; XorCandidate:</span><br><span class="line">    best = XorCandidate(<span class="built_in">float</span>(<span class="string">&quot;-inf&quot;</span>), <span class="number">0</span>, <span class="string">b&quot;&quot;</span>)</span><br><span class="line">    <span class="keyword">for</span> key <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">256</span>):</span><br><span class="line">        plain = <span class="built_in">bytes</span>(b ^ key <span class="keyword">for</span> b <span class="keyword">in</span> ciphertext)</span><br><span class="line">        candidate = XorCandidate(english_score(plain), key, plain)</span><br><span class="line">        <span class="keyword">if</span> candidate.score &gt; best.score:</span><br><span class="line">            best = candidate</span><br><span class="line">    <span class="keyword">return</span> best</span><br></pre></td></tr></table></figure>
 
-<p>恢复结果：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">key = 53</span><br><span class="line">plaintext = Now that the party is jumping</span><br></pre></td></tr></table></figure>
+<p>运行截图：</p>
+<p><img src="/images/crypto-experiments/vscode/exp01_03_single_byte_vscode_terminal_detail.png" alt="单字节 XOR 运行截图"></p>
+<p>结果：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Best key decimal: 88</span><br><span class="line">Best key char   : &#x27;X&#x27;</span><br><span class="line">Plaintext       : Cooking MC&#x27;s like a pound of bacon</span><br></pre></td></tr></table></figure>
 
-<h2 id="4-检测哪一行是单字符-XOR"><a href="#4-检测哪一行是单字符-XOR" class="headerlink" title="4. 检测哪一行是单字符 XOR"></a>4. 检测哪一行是单字符 XOR</h2><p>第四题给了一个真实数据文件：</p>
+<h2 id="5-Detect-single-character-XOR"><a href="#5-Detect-single-character-XOR" class="headerlink" title="5. Detect single-character XOR"></a>5. Detect single-character XOR</h2><p>第四题给的是平台文件：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">https://cryptopals.com/static/challenge-data/4.txt</span><br></pre></td></tr></table></figure>
 
-<p>文件里有 327 行，每一行都是一个 hex 字符串。题目说其中一行被单字符 XOR 加密。</p>
-<p>这题其实就是第三题的批量版本。</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">detect_single_character_xor</span>(<span class="params">lines: <span class="built_in">list</span>[<span class="built_in">str</span>]</span>):</span><br><span class="line">    best_line = -<span class="number">1</span></span><br><span class="line">    best = <span class="literal">None</span></span><br><span class="line">    <span class="keyword">for</span> index, line <span class="keyword">in</span> <span class="built_in">enumerate</span>(lines, start=<span class="number">1</span>):</span><br><span class="line">        candidate = break_single_byte_xor(<span class="built_in">bytes</span>.fromhex(line.strip()))</span><br><span class="line">        <span class="keyword">if</span> best <span class="keyword">is</span> <span class="literal">None</span> <span class="keyword">or</span> candidate.score &gt; best.score:</span><br><span class="line">            best_line = index</span><br><span class="line">            best = candidate</span><br><span class="line">    <span class="keyword">return</span> best_line, best</span><br></pre></td></tr></table></figure>
+<p>本地保存为：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">work/evidence/cryptopals.com_static_challenge-data_4.txt.txt</span><br></pre></td></tr></table></figure>
 
-<p>运行后检测到：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">line = 171</span><br><span class="line">key = 53</span><br><span class="line">plaintext = Now that the party is jumping</span><br></pre></td></tr></table></figure>
+<p>文件有 327 行，每行都是一个 hex 字符串，其中只有一行被单字节 XOR 加密。</p>
+<p>思路就是把第三题的破解器套到每一行：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">detect_single_character_xor</span>(<span class="params">lines: <span class="built_in">list</span>[<span class="built_in">str</span>]</span>) -&gt; <span class="built_in">tuple</span>[<span class="built_in">int</span>, XorCandidate]:</span><br><span class="line">    best_line = -<span class="number">1</span></span><br><span class="line">    best = XorCandidate(<span class="built_in">float</span>(<span class="string">&quot;-inf&quot;</span>), <span class="number">0</span>, <span class="string">b&quot;&quot;</span>)</span><br><span class="line">    <span class="keyword">for</span> index, line <span class="keyword">in</span> <span class="built_in">enumerate</span>(lines, start=<span class="number">1</span>):</span><br><span class="line">        candidate = break_single_byte_xor(<span class="built_in">bytes</span>.fromhex(line.strip()))</span><br><span class="line">        <span class="keyword">if</span> candidate.score &gt; best.score:</span><br><span class="line">            best_line = index</span><br><span class="line">            best = candidate</span><br><span class="line">    <span class="keyword">return</span> best_line, best</span><br></pre></td></tr></table></figure>
 
-<h2 id="5-重复密钥-XOR-加密"><a href="#5-重复密钥-XOR-加密" class="headerlink" title="5. 重复密钥 XOR 加密"></a>5. 重复密钥 XOR 加密</h2><p>第五题是实现 repeating-key XOR。明文是：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Burning &#x27;em, if you ain&#x27;t quick and nimble</span><br><span class="line">I go crazy when I hear a cymbal</span><br></pre></td></tr></table></figure>
+<p>运行截图：</p>
+<p><img src="/images/crypto-experiments/vscode/exp01_04_detect_single_vscode_terminal_detail.png" alt="检测单字符 XOR 运行截图"></p>
+<p>结果：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Total candidate lines: 327</span><br><span class="line">Detected line number: 171</span><br><span class="line">Detected key        : 53 (&#x27;5&#x27;)</span><br><span class="line">Plaintext           : Now that the party is jumping</span><br></pre></td></tr></table></figure>
 
-<p>key 是：</p>
+<h2 id="6-Implement-repeating-key-XOR"><a href="#6-Implement-repeating-key-XOR" class="headerlink" title="6. Implement repeating-key XOR"></a>6. Implement repeating-key XOR</h2><p>第五题实现重复密钥 XOR。题目给出的 key 是：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">ICE</span><br></pre></td></tr></table></figure>
 
-<p>实现方式：</p>
+<p>明文是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Burning &#x27;em, if you ain&#x27;t quick and nimble</span><br><span class="line">I go crazy when I hear a cymbal</span><br></pre></td></tr></table></figure>
+
+<p>实现：</p>
 <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">repeating_key_xor</span>(<span class="params">plaintext: <span class="built_in">bytes</span>, key: <span class="built_in">bytes</span></span>) -&gt; <span class="built_in">bytes</span>:</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">bytes</span>(byte ^ key[i % <span class="built_in">len</span>(key)] <span class="keyword">for</span> i, byte <span class="keyword">in</span> <span class="built_in">enumerate</span>(plaintext))</span><br></pre></td></tr></table></figure>
 
-<p>这里 <code>i % len(key)</code> 的作用是让 key 循环使用。</p>
-<h2 id="6-重复密钥-XOR-破译"><a href="#6-重复密钥-XOR-破译" class="headerlink" title="6. 重复密钥 XOR 破译"></a>6. 重复密钥 XOR 破译</h2><p>第六题是真正有意思的地方。题目给了一个 base64 文件：</p>
+<p><code>i % len(key)</code> 表示密钥循环使用。</p>
+<p>运行截图：</p>
+<p><img src="/images/crypto-experiments/vscode/exp01_05_repeating_xor_vscode_terminal_detail.png" alt="重复密钥 XOR 加密运行截图"></p>
+<p>脚本会把实际输出和题目期望 hex 比较，验证为 <code>PASS</code>。</p>
+<h2 id="7-Break-repeating-key-XOR"><a href="#7-Break-repeating-key-XOR" class="headerlink" title="7. Break repeating-key XOR"></a>7. Break repeating-key XOR</h2><p>第六题是 Set 1 里最有代表性的题。真实数据来自：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">https://cryptopals.com/static/challenge-data/6.txt</span><br></pre></td></tr></table></figure>
 
-<p>这个文件先被 repeating-key XOR 加密，然后又被 base64 编码。</p>
+<p>这个文件先被 repeating-key XOR 加密，再被 base64 编码。</p>
 <p>破译步骤：</p>
-<ol>
-<li>base64 解码得到密文字节。</li>
-<li>猜测 keysize。</li>
-<li>用 Hamming distance 评价 keysize。</li>
-<li>按 keysize 把密文转置。</li>
-<li>每一列当作单字节 XOR 解。</li>
-<li>拼出完整 key。</li>
-<li>用 key 解密全文。</li>
-</ol>
-<p>Hamming distance 就是两个字节串不同 bit 的数量。题目给了一个自检样例：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">this is a test</span><br><span class="line">wokka wokka!!!</span><br><span class="line">distance = 37</span><br></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">1. base64 解码得到 ciphertext</span><br><span class="line">2. 用 Hamming distance 猜 keysize</span><br><span class="line">3. 按 keysize 转置密文</span><br><span class="line">4. 每一列当作单字节 XOR 破解</span><br><span class="line">5. 拼出完整 key</span><br><span class="line">6. 用 key 解密全文</span><br></pre></td></tr></table></figure>
+
+<p>Hamming distance 是两个等长字节串不同 bit 的数量。</p>
+<p>题目给了自检：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">distance(&quot;this is a test&quot;, &quot;wokka wokka!!!&quot;) = 37</span><br></pre></td></tr></table></figure>
 
 <p>代码：</p>
 <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">hamming_distance</span>(<span class="params">left: <span class="built_in">bytes</span>, right: <span class="built_in">bytes</span></span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(left) != <span class="built_in">len</span>(right):</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;inputs must have equal length&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">sum</span>((a ^ b).bit_count() <span class="keyword">for</span> a, b <span class="keyword">in</span> <span class="built_in">zip</span>(left, right))</span><br></pre></td></tr></table></figure>
 
 <p>keysize 评分：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> key_size <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">2</span>, <span class="number">41</span>):</span><br><span class="line">    blocks = [ciphertext[i:i + key_size] <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, key_size * <span class="number">8</span>, key_size)]</span><br><span class="line">    distances = [</span><br><span class="line">        hamming_distance(a, b) / key_size</span><br><span class="line">        <span class="keyword">for</span> a, b <span class="keyword">in</span> itertools.combinations(blocks[:<span class="number">6</span>], <span class="number">2</span>)</span><br><span class="line">    ]</span><br><span class="line">    score = <span class="built_in">sum</span>(distances) / <span class="built_in">len</span>(distances)</span><br></pre></td></tr></table></figure>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> key_size <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">2</span>, <span class="number">41</span>):</span><br><span class="line">    blocks = [ciphertext[i : i + key_size] <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, key_size * <span class="number">8</span>, key_size)]</span><br><span class="line">    distances = [</span><br><span class="line">        hamming_distance(a, b) / key_size</span><br><span class="line">        <span class="keyword">for</span> a, b <span class="keyword">in</span> itertools.combinations(blocks[:<span class="number">6</span>], <span class="number">2</span>)</span><br><span class="line">    ]</span><br><span class="line">    score = <span class="built_in">sum</span>(distances) / <span class="built_in">len</span>(distances)</span><br></pre></td></tr></table></figure>
 
-<p>真实运行截图：</p>
-<p><img src="/images/crypto-experiments/detailed/exp01_06_repeating_key_run.png" alt="重复密钥 XOR 运行截图"></p>
-<p>恢复出来的 key：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Terminator X: Bring the noise</span><br></pre></td></tr></table></figure>
+<p>转置后，每个 offset 对应一个密钥字节：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">key = <span class="built_in">bytes</span>(</span><br><span class="line">    break_single_byte_xor(ciphertext[offset::key_size]).key</span><br><span class="line">    <span class="keyword">for</span> offset <span class="keyword">in</span> <span class="built_in">range</span>(key_size)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p>运行截图：</p>
+<p><img src="/images/crypto-experiments/vscode/exp01_06_break_repeating_vscode_terminal_detail.png" alt="重复密钥 XOR 破译运行截图"></p>
+<p>真实输出：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Decoded ciphertext length: 2876 bytes</span><br><span class="line">Hamming distance self-check: 37</span><br><span class="line">Recovered key: Terminator X: Bring the noise</span><br></pre></td></tr></table></figure>
 
 <p>明文开头：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">I&#x27;m back and I&#x27;m ringin&#x27; the bell</span><br><span class="line">A rockin&#x27; on the mike while the fly girls yell</span><br></pre></td></tr></table></figure>
 
-<h2 id="7-子问题代码截图"><a href="#7-子问题代码截图" class="headerlink" title="7. 子问题代码截图"></a>7. 子问题代码截图</h2><p>这是重复密钥 XOR 破译脚本的真实 VSCode 截图：</p>
-<p><img src="/images/crypto-experiments/detailed/exp01_06_repeating_key_code.png" alt="重复密钥 XOR 代码截图"></p>
-<h2 id="8-常见问题"><a href="#8-常见问题" class="headerlink" title="8. 常见问题"></a>8. 常见问题</h2><h3 id="8-1-在字符串上直接-XOR"><a href="#8-1-在字符串上直接-XOR" class="headerlink" title="8.1 在字符串上直接 XOR"></a>8.1 在字符串上直接 XOR</h3><p>不要在编码字符串上直接操作。正确流程是：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">hex/base64 -&gt; bytes -&gt; XOR -&gt; bytes -&gt; hex/base64</span><br></pre></td></tr></table></figure>
+<h2 id="8-单元测试"><a href="#8-单元测试" class="headerlink" title="8. 单元测试"></a>8. 单元测试</h2><p>最后用 <code>unittest</code> 把平台样例、Hamming distance、重复密钥 XOR、MTC3 SHA1 等一起测了一遍。</p>
+<p><img src="/images/crypto-experiments/vscode/exp01_08_tests_vscode_terminal_detail.png" alt="实验一单元测试截图"></p>
+<p>结果：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Ran 9 tests</span><br><span class="line">OK</span><br></pre></td></tr></table></figure>
 
-<h3 id="8-2-英文评分太粗糙"><a href="#8-2-英文评分太粗糙" class="headerlink" title="8.2 英文评分太粗糙"></a>8.2 英文评分太粗糙</h3><p>评分函数不需要完美，但要能明显区分英文文本和乱码。空格权重要高，不可打印字符要重罚。</p>
-<h3 id="8-3-只用前两块猜-keysize"><a href="#8-3-只用前两块猜-keysize" class="headerlink" title="8.3 只用前两块猜 keysize"></a>8.3 只用前两块猜 keysize</h3><p>只比较前两块可能误差较大。可以取前几块两两比较后求平均。</p>
-<h2 id="9-小结"><a href="#9-小结" class="headerlink" title="9. 小结"></a>9. 小结</h2><p>Cryptopals Set 1 的 XOR 题虽然基础，但训练了密码学实验里很重要的几个习惯：</p>
-<ol>
-<li>一切先转 bytes。</li>
-<li>每个函数用平台样例验证。</li>
-<li>候选结果要排序，不要凭感觉选。</li>
-<li>运行结果要能复现。</li>
-</ol>
-<p>后面做 AES、CBC、RSA 时，这些习惯仍然有用。</p>
+<h2 id="9-常见问题"><a href="#9-常见问题" class="headerlink" title="9. 常见问题"></a>9. 常见问题</h2><h3 id="9-1-在编码字符串上直接-XOR"><a href="#9-1-在编码字符串上直接-XOR" class="headerlink" title="9.1 在编码字符串上直接 XOR"></a>9.1 在编码字符串上直接 XOR</h3><p>错误做法：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">&quot;1c0111...&quot; xor &quot;686974...&quot;</span><br></pre></td></tr></table></figure>
+
+<p>正确做法：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">bytes.fromhex(&quot;1c0111...&quot;) xor bytes.fromhex(&quot;686974...&quot;)</span><br></pre></td></tr></table></figure>
+
+<h3 id="9-2-英文评分只看字母"><a href="#9-2-英文评分只看字母" class="headerlink" title="9.2 英文评分只看字母"></a>9.2 英文评分只看字母</h3><p>空格非常重要。真实英文里空格出现频率很高，给空格较高权重可以明显提升单字节 XOR 破解效果。</p>
+<h3 id="9-3-keysize-只比较前两块"><a href="#9-3-keysize-只比较前两块" class="headerlink" title="9.3 keysize 只比较前两块"></a>9.3 keysize 只比较前两块</h3><p>只比较前两块会有偶然性。取多个块两两比较，再求平均，结果更稳。</p>
+<h3 id="9-4-解-base64-时忘记去掉文本换行"><a href="#9-4-解-base64-时忘记去掉文本换行" class="headerlink" title="9.4 解 base64 时忘记去掉文本换行"></a>9.4 解 base64 时忘记去掉文本换行</h3><p>平台数据是多行 base64。用 Python <code>base64.b64decode()</code> 处理完整文本即可，不要自己按行乱拼。</p>
+<h2 id="10-小结"><a href="#10-小结" class="headerlink" title="10. 小结"></a>10. 小结</h2><p>XOR 题看起来基础，但它训练了密码学实验里最重要的几个习惯：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">先确认数据来源</span><br><span class="line">先转 bytes 再做运算</span><br><span class="line">每个小函数用平台样例验证</span><br><span class="line">候选结果用评分和日志支撑</span><br><span class="line">运行截图保留真实路径、命令和输出</span><br></pre></td></tr></table></figure>
+
+<p>这些习惯后面做 AES、CBC、RSA 时仍然有用。</p>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
-<li>Cryptopals Set 1</li>
-<li>Cryptopals challenge-data 4.txt</li>
-<li>Cryptopals challenge-data 6.txt</li>
+<li>Cryptopals Set 1: <a target="_blank" rel="noopener" href="https://cryptopals.com/sets/1">https://cryptopals.com/sets/1</a></li>
+<li>Cryptopals Challenge 4 data: <a target="_blank" rel="noopener" href="https://cryptopals.com/static/challenge-data/4.txt">https://cryptopals.com/static/challenge-data/4.txt</a></li>
+<li>Cryptopals Challenge 6 data: <a target="_blank" rel="noopener" href="https://cryptopals.com/static/challenge-data/6.txt">https://cryptopals.com/static/challenge-data/6.txt</a></li>
 </ul>
 
     </div>

@@ -3,7 +3,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="utf-8" />
-    <title>Project Euler 182 中的未加密消息 | Yin&#39;s Blog</title>
+    <title>Project Euler 182 中的 RSA 未加密消息 | Yin&#39;s Blog</title>
     <meta name="author" content="Yin" />
     <meta name="description" content="一个热爱技术的开发者的个人博客，分享编程心得和生活感悟" />
     <meta name="keywords" content="hexo,blog,技术博客,编程,开发" />
@@ -165,7 +165,7 @@
         <div id="main" :class="loading ? 'into-enter-from': 'into-enter-active'">
             <div class="article">
     <div>
-        <h1>Project Euler 182 中的未加密消息</h1>
+        <h1>Project Euler 182 中的 RSA 未加密消息</h1>
     </div>
     <div class="info">
         
@@ -194,14 +194,14 @@
             
             <span class="tag">
                 
-                <a href="/tags/RSA/" style="color: #00a596">
+                <a href="/tags/RSA/" style="color: #00bcd4">
                     RSA
                 </a>
             </span>
             
             <span class="tag">
                 
-                <a href="/tags/Project-Euler/" style="color: #00bcd4">
+                <a href="/tags/Project-Euler/" style="color: #00a596">
                     Project Euler
                 </a>
             </span>
@@ -219,103 +219,128 @@
     </div>
     
     <div class="content" v-pre>
-        <h1 id="Project-Euler-182-中的未加密消息"><a href="#Project-Euler-182-中的未加密消息" class="headerlink" title="Project Euler 182 中的未加密消息"></a>Project Euler 182 中的未加密消息</h1><p>Project Euler 182 是一道 RSA 数论题。它讨论的是：某些消息经过 RSA 加密以后，密文仍然等于明文。</p>
+        <h1 id="Project-Euler-182-中的-RSA-未加密消息"><a href="#Project-Euler-182-中的-RSA-未加密消息" class="headerlink" title="Project Euler 182 中的 RSA 未加密消息"></a>Project Euler 182 中的 RSA 未加密消息</h1><p>Project Euler 182 讨论一个看起来有点反直觉的问题：RSA 加密以后，是否可能出现密文仍然等于明文？</p>
 <p>也就是：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">m^e mod n = m</span><br></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">c = m^e mod n</span><br><span class="line">c = m</span><br></pre></td></tr></table></figure>
 
-<p>这样的消息叫做 unconcealed messages，可以理解为“没有被隐藏的消息”。</p>
-<h2 id="1-RSA-基本流程"><a href="#1-RSA-基本流程" class="headerlink" title="1. RSA 基本流程"></a>1. RSA 基本流程</h2><p>RSA 选两个素数：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">p, q</span><br></pre></td></tr></table></figure>
-
-<p>计算：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">n = p q</span><br><span class="line">φ = (p - 1)(q - 1)</span><br></pre></td></tr></table></figure>
-
-<p>选择公钥指数 <code>e</code>：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">1 &lt; e &lt; φ</span><br><span class="line">gcd(e, φ) = 1</span><br></pre></td></tr></table></figure>
-
-<p>加密：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">c = m^e mod n</span><br></pre></td></tr></table></figure>
-
-<p>如果某个 <code>m</code> 满足：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">m^e mod n = m</span><br></pre></td></tr></table></figure>
-
-<p>那么这个 <code>m</code> 对这个 <code>e</code> 来说就是 unconcealed message。</p>
-<h2 id="2-题目要求"><a href="#2-题目要求" class="headerlink" title="2. 题目要求"></a>2. 题目要求</h2><p>Project Euler 182 给出：</p>
+<p>满足这个条件的 <code>m</code> 被称为 unconcealed message，可以理解为“没有被隐藏的消息”。这不是 RSA 实现写错了，而是某些明文在特定指数 <code>e</code> 下天然满足这个同余关系。</p>
+<p>本文使用平台给出的真实参数：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">p = 1009</span><br><span class="line">q = 3643</span><br></pre></td></tr></table></figure>
 
-<p>要求找出所有合法的 <code>e</code>，使 unconcealed messages 的数量最少，然后求这些 <code>e</code> 的和。</p>
-<p>直接枚举所有 <code>m</code> 是很慢的。我们需要先推公式。</p>
-<h2 id="3-计数公式推导"><a href="#3-计数公式推导" class="headerlink" title="3. 计数公式推导"></a>3. 计数公式推导</h2><p>条件是：</p>
+<p>最终目标是找出所有合法 <code>e</code> 中，让 unconcealed messages 数量最少的那些 <code>e</code>，再求它们的和。</p>
+<h2 id="1-RSA-基本过程"><a href="#1-RSA-基本过程" class="headerlink" title="1. RSA 基本过程"></a>1. RSA 基本过程</h2><p>RSA 先选两个素数：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">p, q</span><br></pre></td></tr></table></figure>
+
+<p>然后计算：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">n = p * q</span><br><span class="line">phi = (p - 1) * (q - 1)</span><br></pre></td></tr></table></figure>
+
+<p>公钥指数 <code>e</code> 需要满足：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">1 &lt; e &lt; phi</span><br><span class="line">gcd(e, phi) = 1</span><br></pre></td></tr></table></figure>
+
+<p>加密为：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">c = m^e mod n</span><br></pre></td></tr></table></figure>
+
+<p>解密指数 <code>d</code> 是 <code>e</code> 关于 <code>phi</code> 的模逆：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">e * d = 1 mod phi</span><br></pre></td></tr></table></figure>
+
+<p>这里的 Euler 题不是让我们实现完整加解密，而是研究不同 <code>e</code> 会让多少个 <code>m</code> 满足：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">m^e = m mod n</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-为什么不能直接枚举所有-m"><a href="#2-为什么不能直接枚举所有-m" class="headerlink" title="2. 为什么不能直接枚举所有 m"></a>2. 为什么不能直接枚举所有 m</h2><p>一个最直接的想法是：对每个合法 <code>e</code>，再枚举 <code>m=0..n-1</code>，检查 <code>pow(m, e, n) == m</code>。</p>
+<p>但这样做没有必要。因为：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">n = 1009 * 3643 = 3675787</span><br></pre></td></tr></table></figure>
+
+<p>合法 <code>e</code> 也很多。双重枚举会把问题做得很笨，而且容易超时。</p>
+<p>更好的办法是先推导计数公式，只枚举 <code>e</code>，不枚举每一个 <code>m</code>。</p>
+<h2 id="3-计数公式推导"><a href="#3-计数公式推导" class="headerlink" title="3. 计数公式推导"></a>3. 计数公式推导</h2><p>题目条件是：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">m^e ≡ m (mod n)</span><br></pre></td></tr></table></figure>
 
-<p>因为 <code>n = pq</code>，可以分别在模 <code>p</code> 和模 <code>q</code> 下考虑。</p>
-<p>在模 <code>p</code> 下：</p>
+<p>因为 <code>n = p q</code>，可以分别在模 <code>p</code> 和模 <code>q</code> 下考虑。</p>
+<p>先看模 <code>p</code>：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">m^e ≡ m (mod p)</span><br></pre></td></tr></table></figure>
 
 <p>移项：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">m^e - m ≡ 0 (mod p)</span><br></pre></td></tr></table></figure>
 
 <p>提取 <code>m</code>：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">m(m^(e-1) - 1) ≡ 0 (mod p)</span><br></pre></td></tr></table></figure>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">m * (m^(e-1) - 1) ≡ 0 (mod p)</span><br></pre></td></tr></table></figure>
 
-<p>所以有两类解：</p>
-<ol>
-<li><code>m ≡ 0 (mod p)</code></li>
-<li><code>m^(e-1) ≡ 1 (mod p)</code></li>
-</ol>
-<p>模 <code>p</code> 的乘法群阶是 <code>p-1</code>。方程 <code>x^(e-1)=1</code> 在这个群中的解数是：</p>
+<p>所以模 <code>p</code> 下有两类解：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">m ≡ 0 (mod p)</span><br><span class="line">m^(e-1) ≡ 1 (mod p)</span><br></pre></td></tr></table></figure>
+
+<p>在模 <code>p</code> 的非零乘法群里，群阶是 <code>p-1</code>。方程 <code>x^(e-1)=1</code> 的解数是：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">gcd(e - 1, p - 1)</span><br></pre></td></tr></table></figure>
 
-<p>再加上 <code>m=0</code> 这个解，所以模 <code>p</code> 下解数是：</p>
+<p>再加上 <code>m=0</code> 这个解，模 <code>p</code> 下解数就是：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">gcd(e - 1, p - 1) + 1</span><br></pre></td></tr></table></figure>
 
 <p>同理，模 <code>q</code> 下解数是：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">gcd(e - 1, q - 1) + 1</span><br></pre></td></tr></table></figure>
 
-<p>根据 CRT，总数为：</p>
+<p>最后由中国剩余定理组合，模 <code>n=pq</code> 下总数量为：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">(gcd(e - 1, p - 1) + 1) * (gcd(e - 1, q - 1) + 1)</span><br></pre></td></tr></table></figure>
 
-<h2 id="4-Python-实现"><a href="#4-Python-实现" class="headerlink" title="4. Python 实现"></a>4. Python 实现</h2><p>计数函数：</p>
+<p>这个公式就是整道题的关键。</p>
+<h2 id="4-先写计数函数"><a href="#4-先写计数函数" class="headerlink" title="4. 先写计数函数"></a>4. 先写计数函数</h2><p>代码很短：</p>
 <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> math</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">unconcealed_count</span>(<span class="params">e: <span class="built_in">int</span>, p: <span class="built_in">int</span>, q: <span class="built_in">int</span></span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">    <span class="keyword">return</span> (math.gcd(e - <span class="number">1</span>, p - <span class="number">1</span>) + <span class="number">1</span>) * (math.gcd(e - <span class="number">1</span>, q - <span class="number">1</span>) + <span class="number">1</span>)</span><br></pre></td></tr></table></figure>
 
-<p>完整扫描：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">solve_project_euler_182</span>() -&gt; <span class="built_in">int</span>:</span><br><span class="line">    p, q = <span class="number">1009</span>, <span class="number">3643</span></span><br><span class="line">    phi = (p - <span class="number">1</span>) * (q - <span class="number">1</span>)</span><br><span class="line">    best = <span class="literal">None</span></span><br><span class="line">    total = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> e <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">2</span>, phi):</span><br><span class="line">        <span class="keyword">if</span> math.gcd(e, phi) != <span class="number">1</span>:</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        value = unconcealed_count(e, p, q)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> best <span class="keyword">is</span> <span class="literal">None</span> <span class="keyword">or</span> value &lt; best:</span><br><span class="line">            best = value</span><br><span class="line">            total = e</span><br><span class="line">        <span class="keyword">elif</span> value == best:</span><br><span class="line">            total += e</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> total</span><br></pre></td></tr></table></figure>
-
-<h2 id="5-先验证题目样例"><a href="#5-先验证题目样例" class="headerlink" title="5. 先验证题目样例"></a>5. 先验证题目样例</h2><p>题目给了一个样例：</p>
+<p>它只依赖 <code>e</code>、<code>p</code>、<code>q</code>，不需要枚举所有明文。</p>
+<p>题目给了样例：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">p = 19</span><br><span class="line">q = 37</span><br><span class="line">e = 181</span><br></pre></td></tr></table></figure>
 
-<p>计算结果应该是：</p>
+<p>样例结果应为：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">703</span><br></pre></td></tr></table></figure>
 
-<p>脚本里先做这个检查：</p>
-<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="built_in">print</span>(unconcealed_count(<span class="number">181</span>, <span class="number">19</span>, <span class="number">37</span>))</span><br></pre></td></tr></table></figure>
+<p>所以正式扫描前先做这个检查。</p>
+<h2 id="5-扫描所有合法-e"><a href="#5-扫描所有合法-e" class="headerlink" title="5. 扫描所有合法 e"></a>5. 扫描所有合法 e</h2><p>完整扫描逻辑如下：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">project_euler_182_details</span>() -&gt; <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">int</span> | <span class="built_in">list</span>[<span class="built_in">tuple</span>[<span class="built_in">int</span>, <span class="built_in">int</span>]]]:</span><br><span class="line">    p, q = <span class="number">1009</span>, <span class="number">3643</span></span><br><span class="line">    phi = (p - <span class="number">1</span>) * (q - <span class="number">1</span>)</span><br><span class="line">    best = <span class="literal">None</span></span><br><span class="line">    total = <span class="number">0</span></span><br><span class="line">    count = <span class="number">0</span></span><br><span class="line">    valid_e = <span class="number">0</span></span><br><span class="line">    first_hits: <span class="built_in">list</span>[<span class="built_in">tuple</span>[<span class="built_in">int</span>, <span class="built_in">int</span>]] = []</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> e <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">2</span>, phi):</span><br><span class="line">        <span class="keyword">if</span> math.gcd(e, phi) != <span class="number">1</span>:</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        valid_e += <span class="number">1</span></span><br><span class="line">        value = unconcealed_count(e, p, q)</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> best <span class="keyword">is</span> <span class="literal">None</span> <span class="keyword">or</span> value &lt; best:</span><br><span class="line">            best = value</span><br><span class="line">            total = e</span><br><span class="line">            count = <span class="number">1</span></span><br><span class="line">            first_hits = [(e, value)]</span><br><span class="line">        <span class="keyword">elif</span> value == best:</span><br><span class="line">            total += e</span><br><span class="line">            count += <span class="number">1</span></span><br><span class="line">            <span class="keyword">if</span> <span class="built_in">len</span>(first_hits) &lt; <span class="number">8</span>:</span><br><span class="line">                first_hits.append((e, value))</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">        <span class="string">&quot;p&quot;</span>: p,</span><br><span class="line">        <span class="string">&quot;q&quot;</span>: q,</span><br><span class="line">        <span class="string">&quot;n&quot;</span>: p * q,</span><br><span class="line">        <span class="string">&quot;phi&quot;</span>: phi,</span><br><span class="line">        <span class="string">&quot;valid_e&quot;</span>: valid_e,</span><br><span class="line">        <span class="string">&quot;min_unconcealed&quot;</span>: best <span class="keyword">or</span> <span class="number">0</span>,</span><br><span class="line">        <span class="string">&quot;min_count&quot;</span>: count,</span><br><span class="line">        <span class="string">&quot;sum&quot;</span>: total,</span><br><span class="line">        <span class="string">&quot;first_hits&quot;</span>: first_hits,</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
 
-<p>如果这个样例不对，后面大参数就不要继续算。</p>
+<p>这里保存了几个信息：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">valid_e       合法 e 的数量</span><br><span class="line">best          当前最小 unconcealed message 数量</span><br><span class="line">count         达到最小值的 e 的数量</span><br><span class="line">total         这些 e 的总和</span><br><span class="line">first_hits    前几个达到最小值的 e，方便检查</span><br></pre></td></tr></table></figure>
+
 <h2 id="6-真实运行结果"><a href="#6-真实运行结果" class="headerlink" title="6. 真实运行结果"></a>6. 真实运行结果</h2><p>运行脚本：</p>
 <figure class="highlight powershell"><table><tr><td class="code"><pre><span class="line">python work\experiment_03_rsa_math\<span class="number">02</span>_solve_project_euler_182.py</span><br></pre></td></tr></table></figure>
 
-<p>截图：</p>
-<p><img src="/images/crypto-experiments/detailed/exp03_02_euler_run.png" alt="Project Euler 182 运行截图"></p>
-<p>关键输出：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">Valid e count: 882432</span><br><span class="line">Minimum unconcealed messages: 9</span><br><span class="line">Number of e values at minimum: 441216</span><br><span class="line">Final answer: 399788195976</span><br></pre></td></tr></table></figure>
+<p>真实 VSCode 运行截图如下：</p>
+<p><img src="/images/crypto-experiments/vscode/exp03_02_project_euler_vscode_terminal_detail.png" alt="Project Euler 182 运行截图"></p>
+<p>输出中的关键结果是：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">p=1009, q=3643</span><br><span class="line">n=3675787</span><br><span class="line">phi=3671136</span><br><span class="line">Valid e count: 1047167</span><br><span class="line">Minimum unconcealed messages: 9</span><br><span class="line">Number of e values at minimum: 217800</span><br><span class="line">Final answer: 399788195976</span><br></pre></td></tr></table></figure>
 
 <p>最终答案：</p>
 <figure class="highlight text"><table><tr><td class="code"><pre><span class="line">399788195976</span><br></pre></td></tr></table></figure>
 
-<h2 id="7-代码截图"><a href="#7-代码截图" class="headerlink" title="7. 代码截图"></a>7. 代码截图</h2><p><img src="/images/crypto-experiments/detailed/exp03_02_euler_code.png" alt="Project Euler 182 代码截图"></p>
-<h2 id="8-常见问题"><a href="#8-常见问题" class="headerlink" title="8. 常见问题"></a>8. 常见问题</h2><h3 id="8-1-直接枚举所有-m"><a href="#8-1-直接枚举所有-m" class="headerlink" title="8.1 直接枚举所有 m"></a>8.1 直接枚举所有 m</h3><p>可以枚举，但没必要，也很慢。题目的核心就是用数论公式减少计算量。</p>
-<h3 id="8-2-忘记-gcd-e-φ-1"><a href="#8-2-忘记-gcd-e-φ-1" class="headerlink" title="8.2 忘记 gcd(e, φ)&#x3D;1"></a>8.2 忘记 gcd(e, φ)&#x3D;1</h3><p>不是所有 <code>e</code> 都合法。必须满足：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">gcd(e, φ) = 1</span><br></pre></td></tr></table></figure>
+<h2 id="7-和-RSA-实现放在一起验证"><a href="#7-和-RSA-实现放在一起验证" class="headerlink" title="7. 和 RSA 实现放在一起验证"></a>7. 和 RSA 实现放在一起验证</h2><p>实验里还写了一个 RSA 基本实现，用来验证模逆、加密、解密流程。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">egcd</span>(<span class="params">a: <span class="built_in">int</span>, b: <span class="built_in">int</span></span>) -&gt; <span class="built_in">tuple</span>[<span class="built_in">int</span>, <span class="built_in">int</span>, <span class="built_in">int</span>]:</span><br><span class="line">    <span class="keyword">if</span> b == <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">return</span> a, <span class="number">1</span>, <span class="number">0</span></span><br><span class="line">    g, x1, y1 = egcd(b, a % b)</span><br><span class="line">    <span class="keyword">return</span> g, y1, x1 - (a // b) * y1</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">invmod</span>(<span class="params">a: <span class="built_in">int</span>, m: <span class="built_in">int</span></span>) -&gt; <span class="built_in">int</span>:</span><br><span class="line">    g, x, _ = egcd(a, m)</span><br><span class="line">    <span class="keyword">if</span> g != <span class="number">1</span>:</span><br><span class="line">        <span class="keyword">raise</span> ValueError(<span class="string">&quot;inverse does not exist&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> x % m</span><br></pre></td></tr></table></figure>
 
-<h3 id="8-3-只找最小值，不求所有-e-的和"><a href="#8-3-只找最小值，不求所有-e-的和" class="headerlink" title="8.3 只找最小值，不求所有 e 的和"></a>8.3 只找最小值，不求所有 e 的和</h3><p>题目问的是所有达到最小值的 <code>e</code> 的和，不是其中一个 <code>e</code>。</p>
-<h2 id="9-小结"><a href="#9-小结" class="headerlink" title="9. 小结"></a>9. 小结</h2><p>这道题的流程是：</p>
-<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">理解 unconcealed message</span><br><span class="line">推导计数公式</span><br><span class="line">用样例验证公式</span><br><span class="line">枚举合法 e</span><br><span class="line">找到最小 count</span><br><span class="line">累加所有达到最小 count 的 e</span><br></pre></td></tr></table></figure>
+<p>演示用小素数只用于验证公式：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">public key : e=3, n=11413</span><br><span class="line">private key: d=7467, n=11413</span><br><span class="line">message    : 42</span><br><span class="line">ciphertext : 5610</span><br><span class="line">decrypted  : 42</span><br></pre></td></tr></table></figure>
 
-<p>这类 RSA 数论题的重点通常不是写很复杂的代码，而是先把数学关系化简。</p>
+<p>截图：</p>
+<p><img src="/images/crypto-experiments/vscode/exp03_01_rsa_roundtrip_vscode_terminal_detail.png" alt="RSA roundtrip 运行截图"></p>
+<h2 id="8-常见错误"><a href="#8-常见错误" class="headerlink" title="8. 常见错误"></a>8. 常见错误</h2><h3 id="8-1-把-e-的范围写错"><a href="#8-1-把-e-的范围写错" class="headerlink" title="8.1 把 e 的范围写错"></a>8.1 把 e 的范围写错</h3><p>合法 <code>e</code> 必须满足：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">1 &lt; e &lt; phi</span><br><span class="line">gcd(e, phi) = 1</span><br></pre></td></tr></table></figure>
+
+<p>如果忘记 <code>gcd(e, phi)=1</code>，会把不能作为 RSA 公钥指数的值也算进去。</p>
+<h3 id="8-2-直接枚举每个-m"><a href="#8-2-直接枚举每个-m" class="headerlink" title="8.2 直接枚举每个 m"></a>8.2 直接枚举每个 m</h3><p>这道题重点是数论计数公式。枚举所有 <code>m</code> 不是不能做小样例，但对正式参数没有必要。</p>
+<h3 id="8-3-样例没验证就跑正式参数"><a href="#8-3-样例没验证就跑正式参数" class="headerlink" title="8.3 样例没验证就跑正式参数"></a>8.3 样例没验证就跑正式参数</h3><p>先验证：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">p=19, q=37, e=181 -&gt; 703</span><br></pre></td></tr></table></figure>
+
+<p>样例正确后再跑平台参数，调试会稳很多。</p>
+<h3 id="8-4-只记录最小值，不记录所有-e-的和"><a href="#8-4-只记录最小值，不记录所有-e-的和" class="headerlink" title="8.4 只记录最小值，不记录所有 e 的和"></a>8.4 只记录最小值，不记录所有 e 的和</h3><p>题目要的是所有达到最小值的 <code>e</code> 的总和，不是其中一个 <code>e</code>。</p>
+<h2 id="9-小结"><a href="#9-小结" class="headerlink" title="9. 小结"></a>9. 小结</h2><p>Project Euler 182 的核心是把：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">m^e = m mod n</span><br></pre></td></tr></table></figure>
+
+<p>转成可计数的同余方程。最后使用：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">(gcd(e-1,p-1)+1)(gcd(e-1,q-1)+1)</span><br></pre></td></tr></table></figure>
+
+<p>避免枚举明文，只扫描合法 <code>e</code>。使用平台真实参数后，最终结果为：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">399788195976</span><br></pre></td></tr></table></figure>
+
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
-<li>Project Euler Problem 182</li>
-<li>欧拉计划中文站 Problem 182</li>
-<li>RSA 基本原理</li>
+<li>Project Euler Problem 182: <a target="_blank" rel="noopener" href="https://projecteuler.net/problem=182">https://projecteuler.net/problem=182</a></li>
+<li>Project Euler 182 中文镜像: <a target="_blank" rel="noopener" href="http://pe-cn.github.io/182/">http://pe-cn.github.io/182/</a></li>
+<li>Cryptopals Set 5 Challenge 39: <a target="_blank" rel="noopener" href="https://www.cryptopals.com/sets/5/challenges/39">https://www.cryptopals.com/sets/5/challenges/39</a></li>
+<li>RSA Cryptosystem: <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/RSA_cryptosystem">https://en.wikipedia.org/wiki/RSA_cryptosystem</a></li>
 </ul>
 
     </div>
